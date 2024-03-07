@@ -95,6 +95,7 @@ class CustomSnek(Snek):
                     else:
                         print(self.mapObj.map[i][j], end=" ")
                 print("")
+            self.mapObj.fillHead()
             self.step += 1
 
 
@@ -314,11 +315,6 @@ class CustomSnek(Snek):
         # Mark cell as occupied relative to snek head
         def fillCell(self, direction, distance: int) -> None:
 
-            # Set cell where snek's head is to be occupied
-            self.map[30][45] = self.myCell()
-            self.map[30][45].occupied = True
-            self.map[30][45].ignore = True
-
             # If block is certain to be occupied,
             if distance < 19:
                 # Use direction of look to find occupied cell's location relative to snek
@@ -338,6 +334,12 @@ class CustomSnek(Snek):
                     self.map[30 + distance][45].occupied = True
                 else:
                     raise ValueError("Invalid direction")
+
+
+        def fillHead(self):
+            # Set cell where snek's head is to be occupied
+            self.map[30][45].occupied = True
+            self.map[30][45].ignore = True
 
         # TODO: Map.shiftMap()
         # Move the map relative to where the snek moved this step
