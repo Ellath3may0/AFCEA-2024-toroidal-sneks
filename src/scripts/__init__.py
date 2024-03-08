@@ -15,6 +15,9 @@ def validate():
 
 
 def run():
+    sneks_config.registrar_submission_sneks = 1
+    sneks_config.runs = 1000000000000000
+    sneks_config.turn_limit = 1000000000000
     sneks_config.registrar_prefix = prefix
     sneks_config.graphics.step_delay = script_config.STEP_DELAY_MILLISECONDS
     sneks_config.graphics.step_keypress_wait = (

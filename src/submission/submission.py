@@ -54,48 +54,43 @@ class CustomSnek(Snek):
         # Check is initialised
         # If not initialised...
         if not self.initialised:
+
             # Create a new, empty map
             self.mapObj = self.Map()
+
+            # Making ABSOLUTELY CERTAIN that step is initialised correctly
             self.step = 1
+
             # Set snek to initialised
             self.initialised = True
+
+            # Set state to default (just in case)
             state = "search"
+
             # Look around snek and fill in map
             self.mapFiller()
+
+            # Mark snek's head as occupied
+            self.mapObj.fillHead()
+
+            # Telemetry key. I don't care how long the line is, its not worth trying to fit
             print("Telemetry key:\n[map]\n - H = Snek head\n - X = ignored occupied cell\n - [] = non-ignored occupied cell\n - . = unoccupied cell\n\nClosest target distance from head: [152 if no target selected]\nClosest target map pos [y, x]:     [30, 45 by default]\nClosest target occupied: - [if occupied, prints True]\nClosest target rPosY:    - [position of target cell relative to snek head (Y)]\nClosest target rPosX:    - [position of target cell relative to snek head (X)]\nClosest target ignore:   - [True if the cell is ignored by searcher/hunter]")
+
         # If initialised...
         else:
             # Another debug print
             print(self.lastStep)
-            # map
-            for i in range(60):
-                for j in range(90):
-                    if i == 30 and j == 45:
-                        print("H", end=" ")
-                    else:
-                        print(self.mapObj.map[i][j], end=" ")
-                print("")
+
             # Shift map relative to last snek movement
             self.mapObj.shiftMap(self.lastStep)
-            # map
-            for i in range(60):
-                for j in range(90):
-                    if i == 30 and j == 45:
-                        print("H", end=" ")
-                    else:
-                        print(self.mapObj.map[i][j], end=" ")
-                print("")
+
             # Look around snek and fill in map
             self.mapFiller()
-            # map
-            for i in range(60):
-                for j in range(90):
-                    if i == 30 and j == 45:
-                        print("H", end=" ")
-                    else:
-                        print(self.mapObj.map[i][j], end=" ")
-                print("")
+
+            # Mark snek's head as occupied
             self.mapObj.fillHead()
+
+
             self.step += 1
 
 
@@ -110,24 +105,24 @@ class CustomSnek(Snek):
     # TODO: get_next_direction().[debug printers] <----------------------------------------------------------------------
 
         # map
-        '''
+
         for i in range(60):
             for j in range(90):
                 if i == 30 and j == 45:
                     print("H", end=" ")
                 else:
                     print(self.mapObj.map[i][j], end=" ")
-            print("")'''
+            print()
 
         # Print danger zone
-        '''
+
         for i in range(-2, 3):
             for j in range(-2, 3):
                 if i == 0 and j == 0:
                     print("H", end=" ")
                 else:
                     print(self.mapObj.map[30 + i][45 + j], end=" ")
-            print("")'''
+            print()
         # lastStep
         '''
         print(self.lastStep)'''
@@ -175,6 +170,8 @@ class CustomSnek(Snek):
     # Mode methods
     # TODO: Search mode: <==============================================================================================
     def search(self):
+        # Switching to hunt condition
+        # If snek finds a non-ignored, occupied cell, it will set it as target and switch to hunt mode
         # find nearest non self-spawned occupied cell
         lowestDistance = 152
         lowestIndices = [30, 45]
@@ -189,18 +186,20 @@ class CustomSnek(Snek):
                         lowestIndices[0] = self.mapObj.map[i][j].rPosY
                         lowestIndices[1] = self.mapObj.map[i][j].rPosX
 
+        '''
         print("Closest target distance from head:", lowestDistance)
         print("Closest target map pos [y, x]:    ", lowestIndices)
         print("Closest target occupied: -", self.mapObj.map[lowestIndices[0]][lowestIndices[1]].occupied,
               "\nClosest target rPosY:    -", self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosY,
               "\nClosest target rPosX:    -", self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosX,
               "\nClosest target ignore:   -", self.mapObj.map[lowestIndices[0]][lowestIndices[1]].ignore
-              )
+              )'''
 
         if lowestDistance != 152:
             self.state = "hunt"
             self.huntCounter = 0
-            return self.hunt()
+            self.huntStage = 'travel'
+            return self.hunt(lowestIndices)
 
         # Move
         self.searchStep += 1
@@ -223,6 +222,8 @@ class CustomSnek(Snek):
     def searchShift(self, direction: Direction) -> Direction:
 
         self.searchStep -= 1
+        if self.look(Direction.LEFT) < 2:
+            return Direction.UP
         if direction == Direction.UP:
             return Direction.LEFT
         elif direction == Direction.RIGHT:
@@ -231,14 +232,34 @@ class CustomSnek(Snek):
             raise ValueError("direction not valid")
 
 
+    # Hunt stage variable
+    huntStage = 'travel'
+
+    # Hunt target cell
+    targetCell = None
+
     # TODO: Hunting mode: <=============================================================================================
-    def hunt(self):
+    def hunt(self, targetIndices = [30, 45]):
         self.huntCounter += 1
-        print("Nope. It's still broken")
+        if targetIndices != [30, 45]:
+            self.targetCell = self.mapObj.map[targetIndices[0]][targetIndices[1]]
+
+
+        # Check if danger is on more than one side.
+            # If danger is on all sides,
+            #     switch to escape mode
+            # If danger is on the snek's left (relative to last step) and direction of origin,
+            #     move in the direction clockwise from the direction of danger
+            # If danger is on the snek's left side ("), direction of origin, and forward direction ("),
+            #     move right (")
+            # If danger is on the snek's left("), origin, and right("),
+            #     move forward(")
+            # If no danger to the snek's left,
+            #     move left(")
         # Mark cells within 1/3 of step distance (use get distance from cell class) from original target of hunt
         # (lowestDistance from search) as ignore
         self.lastStep = Direction.UP
-        return Direction.UP # TODO: ++==================================================================================
+        return self.lastStep
 
     # TODO: Escape mode: <==============================================================================================
     def escape(self):
@@ -315,6 +336,9 @@ class CustomSnek(Snek):
         # Mark cell as occupied relative to snek head
         def fillCell(self, direction, distance: int) -> None:
 
+            # Fix c:
+            distance += 1
+
             # If block is certain to be occupied,
             if distance < 19:
                 # Use direction of look to find occupied cell's location relative to snek
@@ -344,37 +368,34 @@ class CustomSnek(Snek):
         # TODO: Map.shiftMap()
         # Move the map relative to where the snek moved this step
         def shiftMap(self, lastStep: Direction) -> None:
-            # Read the code dummy (roll map relative to lastStep)
+            # Roll map relative to lastStep
             if lastStep == Direction.UP:
-                temp = self.map[59]
-                for i in range(58):
+                # Save the last row
+                temp: list = self.map[59]
+                for i in range(59):
                     self.map[59 - i] = self.map[58 - i]
-
                 self.map[0] = temp
-
 
             elif lastStep == Direction.LEFT:
                 for i in range(60):
                     temp = self.map[i][89]
-                    for j in range(88):
+                    for j in range(89):
                         self.map[i][89 - j] = self.map[i][88 - j]
-
                     self.map[i][0] = temp
 
             elif lastStep == Direction.RIGHT:
                 for i in range(60):
                     temp = self.map[i][0]
                     for j in range(89):
-                        self.map[i][j] = self.map[i][j + 1]# TODO: THING
-
+                        self.map[i][j] = self.map[i][j + 1]
                     self.map[i][89] = temp
 
             elif lastStep == Direction.DOWN:
-                temp = self.map[0]
-                for i in range(59):
+                temp: list = self.map[0]
+                for i in range(60):
                     self.map[i] = self.map[i + 1]
-
                 self.map[59] = temp
+
             else:
                 raise ValueError("Invalid direction")
 
