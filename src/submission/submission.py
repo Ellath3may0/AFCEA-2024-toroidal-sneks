@@ -74,13 +74,10 @@ class CustomSnek(Snek):
             self.mapObj.fillHead()
 
             # Telemetry key. I don't care how long the line is, its not worth trying to fit
-            print("Telemetry key:\n[map]\n - H = Snek head\n - X = ignored occupied cell\n - [] = non-ignored occupied cell\n - . = unoccupied cell\n\nClosest target distance from head: [152 if no target selected]\nClosest target map pos [y, x]:     [30, 45 by default]\nClosest target occupied: - [if occupied, prints True]\nClosest target rPosY:    - [position of target cell relative to snek head (Y)]\nClosest target rPosX:    - [position of target cell relative to snek head (X)]\nClosest target ignore:   - [True if the cell is ignored by searcher/hunter]")
+            '''print("Telemetry key:\n[map]\n - H = Snek head\n - X = ignored occupied cell\n - [] = non-ignored occupied cell\n - . = unoccupied cell\n\nClosest target distance from head: [152 if no target selected]\nClosest target map pos [y, x]:     [30, 45 by default]\nClosest target occupied: - [if occupied, prints True]\nClosest target rPosY:    - [position of target cell relative to snek head (Y)]\nClosest target rPosX:    - [position of target cell relative to snek head (X)]\nClosest target ignore:   - [True if the cell is ignored by searcher/hunter]")'''
 
         # If initialised...
         else:
-            # Another debug print
-            print(self.lastStep)
-
             # Shift map relative to last snek movement
             self.mapObj.shiftMap(self.lastStep)
 
@@ -105,24 +102,24 @@ class CustomSnek(Snek):
     # TODO: get_next_direction().[debug printers] <----------------------------------------------------------------------
 
         # map
-
+        '''
         for i in range(60):
             for j in range(90):
                 if i == 30 and j == 45:
                     print("H", end=" ")
                 else:
                     print(self.mapObj.map[i][j], end=" ")
-            print()
+            print()'''
 
         # Print danger zone
-
+        '''
         for i in range(-2, 3):
             for j in range(-2, 3):
                 if i == 0 and j == 0:
                     print("H", end=" ")
                 else:
                     print(self.mapObj.map[30 + i][45 + j], end=" ")
-            print()
+            print()'''
         # lastStep
         '''
         print(self.lastStep)'''
@@ -205,13 +202,11 @@ class CustomSnek(Snek):
         self.searchStep += 1
         if self.searchStep % 2 == 0:
             if self.isSafe(Direction.UP):
-                print(self.isSafe(Direction.UP))
                 self.lastStep = Direction.UP
             else:
                 self.lastStep = self.searchShift(Direction.UP)
         else:
             if self.isSafe(Direction.RIGHT):
-                print(self.isSafe(Direction.RIGHT))
                 self.lastStep = Direction.RIGHT
             else:
                 self.lastStep = self.searchShift(Direction.RIGHT)
@@ -469,7 +464,6 @@ class CustomSnek(Snek):
                                 dangerousDirections.append(Direction.RIGHT)
 
             # return number of hazardous directions, and a list containing the directions that are dangerous.
-            print("")
             return [numDanger, dangerousDirections]
 
 
