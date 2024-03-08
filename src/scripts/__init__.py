@@ -25,4 +25,14 @@ def run():
     )
     sneks_config.graphics.end_delay = script_config.END_DELAY_MILLISECONDS
     sneks_config.graphics.end_keypress_wait = script_config.END_DELAY_WAIT_FOR_KEYPRESS
+
+    import cProfile
+    import pstats
+    pr = cProfile.Profile()
+    pr.enable()
+
     runner.main()
+
+    pr.disable()
+    stats = pstats.Stats(pr)
+    stats.sort_stats("tottime").print_stats(20)
