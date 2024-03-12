@@ -230,182 +230,87 @@ class CustomSnek(Snek):
                 self.huntStage = "cage"
                 return self.hunt()
 
-            # if the target is in the same column as the head...
-            if self.targetCell.rPosX == 0:
+            # if the target is in the same column as the head & the target is above the head ***OR***
+            # if the target is above the head & the target is farther horizontally than vertically
+            if (
+                    (self.targetCell.rPosX == 0 and
+                    self.targetCell.rPosY > 0) or
+                    (self.targetCell.rPosY > 0 and
+                    abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY))
+            ):
+                if self.targetCell.rPosX == 0:
+                    self.huntStage = "travelB"
 
-                self.huntStage = "travelB"
+                # if direction is safe...
+                if self.isSafe(Direction.UP):
+                    return Direction.UP
 
-                # if the target is above the head...
-                if self.targetCell.rPosY > 0:
-
-                    # if the direction is safe...
-                    if self.isSafe(Direction.UP):
-
-                        return Direction.UP
-
-                    else:
-
-                        self.state = "escape"
-
-
-                # if the target is below the head...
-                elif self.targetCell.rPosY < 0:
-
-                    # if the direction is safe...
-                    if self.isSafe(Direction.DOWN):
-
-                        return Direction.DOWN
-
-                    else:
-
-                        self.state = "escape"
+                else:
+                    self.state = "search"
 
 
-            # if the target is right of head...
-            elif self.targetCell.rPosX > 0:
+            # if the target is in the same column as the head & the target is below the head ***OR***
+            # if the target is below the head & the target is further horizontally than vertically
+            elif (
+                    (self.targetCell.rPosX == 0 and
+                    self.targetCell.rPosY < 0) or
+                    (self.targetCell.rPosY < 0 and
+                    abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY))
+            ):
+                if self.targetCell.rPosX == 0:
+                    self.huntStage = "travelB"
 
-                # if the target is in the same row as the head...
+                # if direction is safe
+                if self.isSafe(Direction.DOWN):
+                    return Direction.DOWN
+
+                else:
+                    self.state = "search"
+
+
+            # if the target is left of the head & the target is in the same row as the head
+            # if the target is left of the head & the target is further vertically than horizontal
+            elif (
+                    (self.targetCell.rPosX < 0 and
+                    self.targetCell.rPosY == 0) or
+                    (self.targetCell.rPosX < 0 and
+                    abs(self.targetCell.rPosY) > abs(self.targetCell.rPosX)) or
+                    (self.targetCell.rPosY == self.targetCell.rPosX and
+                    self.targetCell.rPosX < 0)
+            ):
                 if self.targetCell.rPosY == 0:
+                    self.huntStage = "travelB"
 
-                    # if the direction is safe...
-                    if self.isSafe(Direction.RIGHT):
+                # if direction is safe
+                if self.isSafe(Direction.LEFT):
+                    return Direction.LEFT
 
-                        return Direction.RIGHT
-
-                    else:
-
-                        self.state = "escape"
-
-
-                # if the target is above the head...
-                elif self.targetCell.rPosY > 0:
-
-                    # if the target is farther horizontally than vertically...
-                    if abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY):
-
-                        # if the direction is safe...
-                        if self.isSafe(Direction.UP):
-
-                            return Direction.UP
-
-                        else:
-
-                            self.state = "escape"
+                else:
+                    self.state = "search"
 
 
-                    # if the target is further vertically than horizontally...
-                    elif abs(self.targetCell.rPosX) < abs(self.targetCell.rPosY):
-
-                        # if the direction is safe...
-                        if self.isSafe(Direction.RIGHT):
-
-                            return Direction.RIGHT
-
-                        else:
-
-                            self.state = "escape"
-
-
-                # if the target is below the head...
-                elif self.targetCell.rPosY < 0:
-
-                    # if the target is farther horizontally than vertically...
-                    if abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY):
-
-                        # if the direction is safe...
-                        if self.isSafe(Direction.DOWN):
-
-                            return Direction.DOWN
-
-                        else:
-
-                            self.state = "escape"
-
-
-                    # if the target is further vertically than horizontally...
-                    elif abs(self.targetCell.rPosX) < abs(self.targetCell.rPosY):
-
-                        # if the direction is safe...
-                        if self.isSafe(Direction.RIGHT):
-
-                            return Direction.RIGHT
-
-                        else:
-
-                            self.state = "escape"
-
-
-            # if the target is left of head...
-            elif self.targetCell.rPosX < 0:
-
-                # if the target is in the same row as the head...
+            # if the target is right of the head & the target is in the same row as the head
+            # if the target is right of the head & the target is further vertically than horizontal
+            elif (
+                    (self.targetCell.rPosX > 0 and
+                    self.targetCell.rPosY == 0) or
+                    (self.targetCell.rPosX > 0 and
+                    abs(self.targetCell.rPosY) > abs(self.targetCell.rPosX)) or
+                    (self.targetCell.rPosY == self.targetCell.rPosX and
+                    self.targetCell.rPosX > 0)
+            ):
                 if self.targetCell.rPosY == 0:
+                    self.huntStage = "travelB"
 
-                    # if the direction is safe...
-                    if self.isSafe(Direction.LEFT):
+                # if direction is safe
+                if self.isSafe(Direction.RIGHT):
+                    return Direction.RIGHT
 
-                        return Direction.LEFT
+                else:
+                    self.state = "search"
 
-                    else:
-
-                        self.state = "escape"
-
-
-                # if the target is above the head...
-                elif self.targetCell.rPosY > 0:
-
-                    # if the target is farther horizontally than vertically...
-                    if abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY):
-
-                        # if the direction is safe...
-                        if self.isSafe(Direction.UP):
-
-                            return Direction.UP
-
-                        else:
-
-                            self.state = "escape"
-
-
-                    # if the target is further vertically than horizontally...
-                    elif abs(self.targetCell.rPosX) < abs(self.targetCell.rPosY):
-
-                        # if the direction is safe...
-                        if self.isSafe(Direction.LEFT):
-
-                            return Direction.LEFT
-
-                        else:
-
-                            self.state = "escape"
-
-
-                # if the target is below the head...
-                elif self.targetCell.rPosY < 0:
-
-                    # if the target is farther horizontally than vertically...
-                    if abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY):
-
-                        # if the direction is safe...
-                        if self.isSafe(Direction.DOWN):
-
-                            return Direction.DOWN
-
-                        else:
-
-                            self.state = "escape"
-
-
-                    # if the target is further vertically than horizontally...
-                    elif abs(self.targetCell.rPosX) < abs(self.targetCell.rPosY):
-
-                        # if the direction is safe...
-                        if self.isSafe(Direction.LEFT):
-
-                            return Direction.LEFT
-
-
-            return self.hunt()
+            else:
+                raise ValueError("I missed a case...")
 
 # TODO: Replace "escape" states with the 'move-around-it' algorithm (idk what I'm doing)================================
 
