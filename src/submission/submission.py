@@ -41,10 +41,11 @@ class CustomSnek(Snek):
     # Used as a switch for one-time initialisation code
     initialised = False
 
-    # Hunt limit timer
-    huntCounter = 0
-
+    # Danger data list
     dangerData: list = None
+
+    # Extreme danger data list
+    extremeDangerData: list = None
 
 
 
@@ -61,11 +62,11 @@ class CustomSnek(Snek):
             # Making ABSOLUTELY CERTAIN that step is initialised correctly
             self.step = 1
 
-            # Set snek to initialised
-            self.initialised = True
-
             # Set state to default (just in case)
-            state = "search"
+            self.state = "search"
+
+            # Set last step to default
+            self.lastStep = Direction.UP
 
             # Look around snek and fill in map
             self.mapFiller()
@@ -73,8 +74,11 @@ class CustomSnek(Snek):
             # Mark snek's head as occupied
             self.mapObj.fillHead()
 
-            # Telemetry key. I don't care how long the line is, its not worth trying to fit
+            # Telemetry key. I don't care how long the line is, it's not worth trying to fit
             '''print("Telemetry key:\n[map]\n - H = Snek head\n - X = ignored occupied cell\n - [] = non-ignored occupied cell\n - . = unoccupied cell\n\nClosest target distance from head: [152 if no target selected]\nClosest target map pos [y, x]:     [30, 45 by default]\nClosest target occupied: - [if occupied, prints True]\nClosest target rPosY:    - [position of target cell relative to snek head (Y)]\nClosest target rPosX:    - [position of target cell relative to snek head (X)]\nClosest target ignore:   - [True if the cell is ignored by searcher/hunter]")'''
+
+            # Set snek to initialised
+            self.initialised = True
 
         # If initialised...
         else:
@@ -92,12 +96,14 @@ class CustomSnek(Snek):
 
 
         # Updating each cell's position relative to snek
-        for i in range(60):
-            for j in range(90):
-                self.mapObj.map[i][j].updateRPos(i, j)
+        for y in range(60):
+            for x in range(90):
+                self.mapObj.map[y][x].updateRPos(y, x)
 
         # Get information about possible dangerous directions
-        self.dangerData = self.mapObj.dangerData(self.lastStep)
+        self.dangerData = self.mapObj.dangerData()
+
+        self.extremeDangerData = self.mapObj.extremeDangerData()
 
     # TODO: get_next_direction().[debug printers] <----------------------------------------------------------------------
 
@@ -111,6 +117,14 @@ class CustomSnek(Snek):
                     print(self.mapObj.map[i][j], end=" ")
             print()'''
 
+        # Map with relative positions
+        '''
+        for i in range(60):
+            for j in range(90):
+                print("(" + str("{:03d}".format(self.mapObj.map[i][j].rPosX) + ", " +
+                    "{:03d}".format(self.mapObj.map[i][j].rPosY)), end=") "
+                )
+            print()'''
         # Print danger zone
         '''
         for i in range(-2, 3):
@@ -139,11 +153,13 @@ class CustomSnek(Snek):
         # When the snek hasn't found an enemy to attempt to trap,
         if self.state == "search":
             # wander diagonally (allows for checking 3 directions each step, filling out more map faster)
-            return self.search()
+            self.lastStep = self.search()
+            return self.lastStep
 
         # When the snek has found an enemy to target
         if self.state == "hunt":
-            return self.hunt()
+            self.lastStep = self.hunt()
+            return self.lastStep
 
         # If there are occupied cells in all directions around the snek, it
         #  will begin searching tighter pathways for possible escape routes.
@@ -151,13 +167,15 @@ class CustomSnek(Snek):
         #  it will turn around and squeeze between its own tail and the wall
         #  opposite the occupied-cell clump it was circling.
         if self.state == "escape":
-            return self.escape()
+            self.lastStep = self.escape()
+            return self.lastStep
 
         # If there are no escape routes, the snek will optimise its movement to use
         #  all available cells in its cocoon to weave through in an effort to
         #  outlast its opponents/live as long as possible.
         if self.state == "survive":
-            return self.survive()
+            self.lastStep = self.survive()
+            return self.lastStep
 
     # Search persistent variables
     # wander step
@@ -174,14 +192,15 @@ class CustomSnek(Snek):
         lowestIndices = [30, 45]
         for i in range(60):
             for j in range(90):
-                if self.mapObj.map[i][j].occupied and \
-                   not self.mapObj.map[i][j].ignore:
+                if (self.mapObj.map[i][j].occupied and
+                   not self.mapObj.map[i][j].ignore
+                ):
                     x = abs(self.mapObj.map[i][j].rPosX)
                     y = abs(self.mapObj.map[i][j].rPosY)
                     if x + y < lowestDistance:
                         lowestDistance = x + y
-                        lowestIndices[0] = self.mapObj.map[i][j].rPosY
-                        lowestIndices[1] = self.mapObj.map[i][j].rPosX
+                        lowestIndices[0] = i
+                        lowestIndices[1] = j
 
         '''
         print("Closest target distance from head:", lowestDistance)
@@ -195,22 +214,213 @@ class CustomSnek(Snek):
         if lowestDistance != 152:
             self.state = "hunt"
             self.huntCounter = 0
-            self.huntStage = 'travel'
-            return self.hunt(lowestIndices)
+            self.huntStage = "travelA"
+            self.huntStartPos = [30, 45]
+            self.targetCell = self.mapObj.map[lowestIndices[0]][lowestIndices[1]]
+            print(self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosX, self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosY)
+
+        # I apologise... I wanted to avoid the nested if statements. I'll probably fix it later but my brain is too
+        #  wired to take care of it now...
+
+            # if the target is within struct range...
+            if (
+                abs(self.targetCell.rPosX) <= 2 and
+                abs(self.targetCell.rPosY) <= 2
+            ):
+                self.huntStage = "cage"
+                return self.hunt()
+
+            # if the target is in the same column as the head...
+            if self.targetCell.rPosX == 0:
+
+                self.huntStage = "travelB"
+
+                # if the target is above the head...
+                if self.targetCell.rPosY > 0:
+
+                    # if the direction is safe...
+                    if self.isSafe(Direction.UP):
+
+                        return Direction.UP
+
+                    else:
+
+                        self.state = "escape"
+
+
+                # if the target is below the head...
+                elif self.targetCell.rPosY < 0:
+
+                    # if the direction is safe...
+                    if self.isSafe(Direction.DOWN):
+
+                        return Direction.DOWN
+
+                    else:
+
+                        self.state = "escape"
+
+
+            # if the target is right of head...
+            elif self.targetCell.rPosX > 0:
+
+                # if the target is in the same row as the head...
+                if self.targetCell.rPosY == 0:
+
+                    # if the direction is safe...
+                    if self.isSafe(Direction.RIGHT):
+
+                        return Direction.RIGHT
+
+                    else:
+
+                        self.state = "escape"
+
+
+                # if the target is above the head...
+                elif self.targetCell.rPosY > 0:
+
+                    # if the target is farther horizontally than vertically...
+                    if abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY):
+
+                        # if the direction is safe...
+                        if self.isSafe(Direction.UP):
+
+                            return Direction.UP
+
+                        else:
+
+                            self.state = "escape"
+
+
+                    # if the target is further vertically than horizontally...
+                    elif abs(self.targetCell.rPosX) < abs(self.targetCell.rPosY):
+
+                        # if the direction is safe...
+                        if self.isSafe(Direction.RIGHT):
+
+                            return Direction.RIGHT
+
+                        else:
+
+                            self.state = "escape"
+
+
+                # if the target is below the head...
+                elif self.targetCell.rPosY < 0:
+
+                    # if the target is farther horizontally than vertically...
+                    if abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY):
+
+                        # if the direction is safe...
+                        if self.isSafe(Direction.DOWN):
+
+                            return Direction.DOWN
+
+                        else:
+
+                            self.state = "escape"
+
+
+                    # if the target is further vertically than horizontally...
+                    elif abs(self.targetCell.rPosX) < abs(self.targetCell.rPosY):
+
+                        # if the direction is safe...
+                        if self.isSafe(Direction.RIGHT):
+
+                            return Direction.RIGHT
+
+                        else:
+
+                            self.state = "escape"
+
+
+            # if the target is left of head...
+            elif self.targetCell.rPosX < 0:
+
+                # if the target is in the same row as the head...
+                if self.targetCell.rPosY == 0:
+
+                    # if the direction is safe...
+                    if self.isSafe(Direction.LEFT):
+
+                        return Direction.LEFT
+
+                    else:
+
+                        self.state = "escape"
+
+
+                # if the target is above the head...
+                elif self.targetCell.rPosY > 0:
+
+                    # if the target is farther horizontally than vertically...
+                    if abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY):
+
+                        # if the direction is safe...
+                        if self.isSafe(Direction.UP):
+
+                            return Direction.UP
+
+                        else:
+
+                            self.state = "escape"
+
+
+                    # if the target is further vertically than horizontally...
+                    elif abs(self.targetCell.rPosX) < abs(self.targetCell.rPosY):
+
+                        # if the direction is safe...
+                        if self.isSafe(Direction.LEFT):
+
+                            return Direction.LEFT
+
+                        else:
+
+                            self.state = "escape"
+
+
+                # if the target is below the head...
+                elif self.targetCell.rPosY < 0:
+
+                    # if the target is farther horizontally than vertically...
+                    if abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY):
+
+                        # if the direction is safe...
+                        if self.isSafe(Direction.DOWN):
+
+                            return Direction.DOWN
+
+                        else:
+
+                            self.state = "escape"
+
+
+                    # if the target is further vertically than horizontally...
+                    elif abs(self.targetCell.rPosX) < abs(self.targetCell.rPosY):
+
+                        # if the direction is safe...
+                        if self.isSafe(Direction.LEFT):
+
+                            return Direction.LEFT
+
+
+            return self.hunt()
+
+# TODO: Replace "escape" states with the 'move-around-it' algorithm (idk what I'm doing)================================
 
         # Move
         self.searchStep += 1
         if self.searchStep % 2 == 0:
             if self.isSafe(Direction.UP):
-                self.lastStep = Direction.UP
+                return Direction.UP
             else:
-                self.lastStep = self.searchShift(Direction.UP)
+                return self.searchShift(Direction.UP)
         else:
             if self.isSafe(Direction.RIGHT):
-                self.lastStep = Direction.RIGHT
+                return Direction.RIGHT
             else:
-                self.lastStep = self.searchShift(Direction.RIGHT)
-        return self.lastStep
+                return self.searchShift(Direction.RIGHT)
 
 
     # TODO: searchShift()
@@ -219,7 +429,7 @@ class CustomSnek(Snek):
         self.searchStep -= 1
         if self.look(Direction.LEFT) < 2:
             return Direction.UP
-        if direction == Direction.UP:
+        elif direction == Direction.UP:
             return Direction.LEFT
         elif direction == Direction.RIGHT:
             return Direction.UP
@@ -228,21 +438,101 @@ class CustomSnek(Snek):
 
 
     # Hunt stage variable
-    huntStage = 'travel'
+    huntStage = 'travelA'
 
     # Hunt target cell
     targetCell = None
 
+    # Hunt limit timer
+    huntCounter = 0
+
+    # Hunt bounds
+    huntBounds = [0, 0, 0, 0]
+
+    # Hunt starting position
+    huntStartPos = [0, 0]
+
+    # Hunting bound tracker
+    huntBoundTracker = [0, 0, 0, 0]
+
     # TODO: Hunting mode: <=============================================================================================
-    def hunt(self, targetIndices = [30, 45]):
+    def hunt(self):
         self.huntCounter += 1
-        if targetIndices != [30, 45]:
-            self.targetCell = self.mapObj.map[targetIndices[0]][targetIndices[1]]
+        if (self.extremeDangerData[0] > 2 and
+            self.huntStage != 'cage'):
+            self.state = 'escape'
+            return self.escape()
+
+        # Stage 1 of travel
+        # Make shorter distance translation
+        if self.huntStage == "travelA":
+            if self.lastStep == Direction.UP or self.lastStep == Direction.DOWN:
+                # if reached correct position, switch to travel stage 2
+                if self.targetCell.rPosY == 0:
+                    self.huntStage = "travelB"
+                    self.huntCounter = -1
+                    return self.hunt()
+                # else, continue travelling
+                else:
+                    try:
+                        self.dangerData.index(self.lastStep)
+                    except ValueError:
+                        return self.lastStep
+                    return self.escape()
+
+            elif self.lastStep == Direction.RIGHT or self.lastStep == Direction.LEFT:
+                # if reached correct position, switch to travel stage 2
+                if self.targetCell.rPosX == 0:
+                    self.huntStage = "travelB"
+                    self.huntCounter = -1
+                    return self.hunt()
+                # else, continue travelling
+                else:
+                    try:
+                        self.dangerData.index(self.lastStep)
+                    except ValueError:
+                        return self.lastStep
+                    return self.escape()
 
 
-        # Check if danger is on more than one side.
-            # If danger is on all sides,
-            #     switch to escape mode
+        elif self.huntStage == "travelB":
+            if self.huntCounter == 0:
+                # if the target is right of head...
+                if (
+                    self.targetCell.rPosX > 0
+                ):
+                    return Direction.RIGHT
+
+                # if the target is below the head...
+                elif (
+                    self.targetCell.rPosY < 0
+                ):
+                    return Direction.DOWN
+
+                # if the target is left of head...
+                elif (
+                    self.targetCell.rPosX < 0
+                ):
+                    return Direction.LEFT
+
+                # if the target is above the head...
+                elif (
+                    self.targetCell.rPosY > 0
+                ):
+                    return Direction.UP
+
+        elif self.huntStage == "cage":
+            print("placeholder")
+
+        elif self.huntStage == "circle":
+            print("placeholder")
+
+
+
+        # Check if extreme danger is on more than one side (unless building structure) ----DONE
+            # If danger is on all sides, ----DONE
+            #     switch to escape mode ----DONE
+        # All of this is for inside circle I need to plan for the other modes
             # If danger is on the snek's left (relative to last step) and direction of origin,
             #     move in the direction clockwise from the direction of danger
             # If danger is on the snek's left side ("), direction of origin, and forward direction ("),
@@ -253,19 +543,75 @@ class CustomSnek(Snek):
             #     move left(")
         # Mark cells within 1/3 of step distance (use get distance from cell class) from original target of hunt
         # (lowestDistance from search) as ignore
-        self.lastStep = Direction.UP
-        return self.lastStep
+        return Direction.UP
 
     # TODO: Escape mode: <==============================================================================================
     def escape(self):
-        print("placeholder")
+        return Direction.LEFT
 
     # TODO: Survive mode: <=============================================================================================
     def survive(self):
-        print("placeholder")
+        return Direction.RIGHT
 
     # Descriptions of all of these modes can be found in the get_next_direction
     #  method, in the section labeled "Mode Callers".
+
+    # TODO: getRelativeDirection()
+    # Returns input direction relative to the snek
+    # - UP = FORWARD
+    # - DOWN = BACKWARD
+    def getRelativeDirection(self, directIn: Direction) -> Direction:
+        if self.lastStep == Direction.UP:
+            if directIn == Direction.UP:
+                return Direction.UP
+            elif directIn == Direction.LEFT:
+                return Direction.LEFT
+            elif directIn == Direction.RIGHT:
+                return Direction.RIGHT
+            elif directIn == Direction.DOWN:
+                return Direction.DOWN
+            else:
+                raise ValueError("Invalid direction")
+
+        elif self.lastStep == Direction.LEFT:
+            if directIn == Direction.UP:
+                return Direction.LEFT
+            elif directIn == Direction.LEFT:
+                return Direction.DOWN
+            elif directIn == Direction.RIGHT:
+                return Direction.UP
+            elif directIn == Direction.DOWN:
+                return Direction.RIGHT
+            else:
+                raise ValueError("Invalid Direction")
+
+        elif self.lastStep == Direction.RIGHT:
+            if directIn == Direction.UP:
+                return Direction.RIGHT
+            elif directIn == Direction.LEFT:
+                return Direction.UP
+            elif directIn == Direction.RIGHT:
+                return Direction.DOWN
+            elif directIn == Direction.DOWN:
+                return Direction.LEFT
+            else:
+                raise ValueError("Invalid direction")
+
+        elif self.lastStep == Direction.DOWN:
+            if directIn == Direction.UP:
+                return Direction.DOWN
+            elif directIn == Direction.LEFT:
+                return Direction.RIGHT
+            elif directIn == Direction.RIGHT:
+                return Direction.LEFT
+            elif directIn == Direction.DOWN:
+                return Direction.UP
+            else:
+                raise ValueError("Invalid direction")
+
+        else:
+            raise ValueError("lastStep broken :/")
+
 
     # TODO: Map; cls;
     # Stores known information about the board
@@ -309,9 +655,9 @@ class CustomSnek(Snek):
                 self.ignore = False
 
             # Update relative position of cells
-            def updateRPos(self, y, x):
-                self.rPosX = -(45 - x)
-                self.rPosY = -(30 - y)
+            def updateRPos(self, y: int, x: int):
+                self.rPosX = x - 45
+                self.rPosY = -(y - 30)
 
             # To string for easy debug printing
             def __str__(self):
@@ -331,7 +677,7 @@ class CustomSnek(Snek):
         # Mark cell as occupied relative to snek head
         def fillCell(self, direction, distance: int) -> None:
 
-            # Fix c:
+            #fix c: (Don't delete it. This isn't the source of your problem. We've done this five times now.)
             distance += 1
 
             # If block is certain to be occupied,
@@ -387,7 +733,7 @@ class CustomSnek(Snek):
 
             elif lastStep == Direction.DOWN:
                 temp: list = self.map[0]
-                for i in range(60):
+                for i in range(59):
                     self.map[i] = self.map[i + 1]
                 self.map[59] = temp
 
@@ -396,7 +742,7 @@ class CustomSnek(Snek):
 
         # TODO: Map.dangerData()
         # Return dangerous directions. Used in hunting mode to avoid getting trapped.
-        def dangerData(self, lastStep) -> list:
+        def dangerData(self) -> list:
             # Dangerous direction counter
             numDanger = 0
 
@@ -408,6 +754,77 @@ class CustomSnek(Snek):
             for i in range(-2, 3):
                 #  x traversal
                 for j in range(-2, 3):
+                    if (
+                        i == 0 and
+                        j == 0
+                    ):
+                        continue
+
+                    elif self.map[30 + i][45 + j].occupied:
+
+                        # Dangerous square detected
+
+                        # If the cell is not in a single direction (diagonal from head), add a second danger
+                        # counter for both possible dangerous directions.
+                        # At least one of these will evaluate to true on each calculation, because
+                        #  a coordinate pair of [0, 0] has already been ruled out by the previous condition.
+                        if i != 0:
+                            numDanger += 1
+                        if j != 0:
+                            numDanger += 1
+
+                        if i < 0:
+
+                            try:
+                                # If direction is not marked dangerous, throws value error
+                                # If direction is marked dangerous, continues. Doesn't add to list,
+                                #  and removes numDanger counter.
+                                dangerousDirections.index(Direction.UP)
+                                # Removes numDanger counter
+                                numDanger -= 1
+
+                            except ValueError:
+                                # Marks direction as dangerous
+                                dangerousDirections.append(Direction.UP)
+
+                        elif i > 0:
+                            try:
+                                dangerousDirections.index(Direction.DOWN)
+                                numDanger -= 1
+                            except ValueError:
+                                dangerousDirections.append(Direction.DOWN)
+
+                        # I am not annotating these, it's the same as the last condition
+                        if j < 0:
+                            try:
+                                dangerousDirections.index(Direction.LEFT)
+                                numDanger -= 1
+                            except ValueError:
+                                dangerousDirections.append(Direction.LEFT)
+
+                        elif j > 0:
+                            try:
+                                dangerousDirections.index(Direction.RIGHT)
+                                numDanger -= 1
+                            except ValueError:
+                                dangerousDirections.append(Direction.RIGHT)
+
+            # return number of hazardous directions, and a list containing the directions that are dangerous.
+            return [numDanger, dangerousDirections]
+
+        # TODO: extremeDangerData()
+        def extremeDangerData(self) -> list:
+            # Dangerous direction counter
+            numDanger = 0
+
+            # Which directions are dangerous?
+            dangerousDirections = []
+
+            # Traverse 3x3 cell space around snek head
+            #  y traversal
+            for i in range(-1, 2):
+                #  x traversal
+                for j in range(-1, 2):
                     if (
                         i == 0 and
                         j == 0
