@@ -1,3 +1,12 @@
+# Disclaimer
+
+I (Ella) did not make this software package. My work is limited to altering the config and submission documents. This
+project is intended to be my work towards a submission for a competition, and not the creation of the Sneks game.
+Below is the original README if you wish to open and test my snek.
+
+#### Extra note: 
+For debugging purposes, I may have changed the config file to require a keypress to make the sneks take steps.
+
 # Sneks on a Toroidal Plane
 
 Build the behavior for your Snek and upload it at [sneks.dev/submit](https://www.sneks.dev/submit) to see how
