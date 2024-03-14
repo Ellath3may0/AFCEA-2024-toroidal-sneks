@@ -219,8 +219,6 @@ class CustomSnek(Snek):
             self.targetCell = self.mapObj.map[lowestIndices[0]][lowestIndices[1]]
             print(self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosX, self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosY)
 
-        # I apologise... I wanted to avoid the nested if statements. I'll probably fix it later but my brain is too
-        #  wired to take care of it now...
 
             # if the target is in the same column as the head & the target is above the head ***OR***
             # if the target is above the head & the target is farther horizontally than vertically
@@ -232,6 +230,12 @@ class CustomSnek(Snek):
             ):
                 if self.targetCell.rPosX == 0:
                     self.huntStage = "travelB"
+                    if abs(self.targetCell.rPosY) < 3:
+                        self.huntStage = "cage"
+                        self.huntCounter = 0
+                        self.lastStep = Direction.UP
+                        return self.hunt()
+
 
                 # if direction is safe...
                 if self.isSafe(Direction.UP):
@@ -251,6 +255,11 @@ class CustomSnek(Snek):
             ):
                 if self.targetCell.rPosX == 0:
                     self.huntStage = "travelB"
+                    if abs(self.targetCell.rPosY) < 3:
+                        self.huntStage = "cage"
+                        self.huntCounter = 0
+                        self.lastStep = Direction.DOWN
+                        return self.hunt()
 
                 # if direction is safe
                 if self.isSafe(Direction.DOWN):
@@ -272,6 +281,11 @@ class CustomSnek(Snek):
             ):
                 if self.targetCell.rPosY == 0:
                     self.huntStage = "travelB"
+                    if abs(self.targetCell.rPosX) < 3:
+                        self.huntStage = "cage"
+                        self.huntCounter = 0
+                        self.lastStep = Direction.LEFT
+                        return self.hunt()
 
                 # if direction is safe
                 if self.isSafe(Direction.LEFT):
@@ -293,6 +307,11 @@ class CustomSnek(Snek):
             ):
                 if self.targetCell.rPosY == 0:
                     self.huntStage = "travelB"
+                    if abs(self.targetCell.rPosX) < 3:
+                        self.huntStage = "cage"
+                        self.huntCounter = 0
+                        self.lastStep = Direction.RIGHT
+                        return self.hunt()
 
                 # if direction is safe
                 if self.isSafe(Direction.RIGHT):
@@ -359,10 +378,12 @@ class CustomSnek(Snek):
 
     # TODO: Hunting mode: <=============================================================================================
     def hunt(self):
+        print(self.targetCell.rPosX, self.targetCell.rPosY)
         self.huntCounter += 1
         if (self.extremeDangerData[0] > 2 and
-            self.huntStage != 'cage' and not
-            self.structSafeIgnore
+            self.huntStage != 'cage' and
+            not self.structSafeIgnore and
+            self.huntStage != 'circle'
         ):
             self.state = 'escape'
             return self.escape()
@@ -370,6 +391,7 @@ class CustomSnek(Snek):
         # Stage 1 of travel
         # Make shorter distance translation
         if self.huntStage == "travelA":
+            print("travelA")
             if self.lastStep == Direction.UP or self.lastStep == Direction.DOWN:
                 # if reached correct position, switch to travel stage 2
                 if self.targetCell.rPosY == 0:
@@ -400,29 +422,27 @@ class CustomSnek(Snek):
 
 
         elif self.huntStage == "travelB":
+            print("travelB")
 
             # While travelling straight...
             if self.huntCounter % 9 < 3 and not self.huntCounter == 0 and not self.structSafeIgnore:
-                # if travelling horizontally and within cage range...
+                print(self.huntCounter % 9)
                 if (
-                    (self.lastStep == Direction.LEFT or
-                    self.lastStep == Direction.RIGHT)
+                    self.lastStep == Direction.LEFT
                         and
-                    abs(self.targetCell.rPosX) < 3
-                ):
-                    self.appDis1 = 91
-                    self.appDis2 = 91
-                    self.appDis3 = 91
-                    self.huntStage = "cage"
-                    self.huntCounter = 0
-                    return self.hunt()
-
-                # if travelling vertically and within cage range...
-                elif (
-                    (self.lastStep == Direction.UP or
-                    self.lastStep == Direction.DOWN)
+                    self.look(Direction.LEFT) < 3
+                    or
+                    self.lastStep == Direction.UP
                         and
-                    abs(self.targetCell.rPosY) < 3
+                    self.look(Direction.UP) < 3
+                    or
+                    self.lastStep == Direction.RIGHT
+                    and
+                    self.look(Direction.RIGHT) < 3
+                    or
+                    self.lastStep == Direction.DOWN
+                        and
+                    self.look(Direction.DOWN) < 3
                 ):
                     self.appDis1 = 91
                     self.appDis2 = 91
@@ -432,25 +452,25 @@ class CustomSnek(Snek):
                     return self.hunt()
 
                 # if the target is right of head...
-                elif (
+                if (
                     self.targetCell.rPosX > 0
                 ):
                     return Direction.RIGHT
 
                 # if the target is below the head...
-                elif (
+                if (
                     self.targetCell.rPosY < 0
                 ):
                     return Direction.DOWN
 
                 # if the target is left of head...
-                elif (
+                if (
                     self.targetCell.rPosX < 0
                 ):
                     return Direction.LEFT
 
                 # if the target is above the head...
-                elif (
+                if (
                     self.targetCell.rPosY > 0
                 ):
                     return Direction.UP
@@ -459,29 +479,32 @@ class CustomSnek(Snek):
             # to give itself more information about the location it's approaching
             '''
             The snek moves like this (relative to direction it's moving):
-            O X>X
-                V
-            X<X<X
+            O   X > X
+                    V
+            X < X < X
             V
-            X>X O
-              V
-            O X O
+            X > X   O
+                V
+            O   X   O
             '''
             if self.huntCounter % 9 == 3:
                 self.structSafeIgnore = True
                 if (
-                    ((self.lastStep == Direction.LEFT or
-                    self.lastStep == Direction.RIGHT) and
-                    abs(self.targetCell.rPosX) < 4)
-
+                    (self.lastStep == Direction.DOWN and
+                    self.look(Direction.DOWN) < 5)
                         or
-
-                    ((self.lastStep == Direction.UP or
-                    self.lastStep == Direction.DOWN) and
-                    abs(self.targetCell.rPosY) < 4)
+                    (self.lastStep == Direction.UP and
+                    self.look(Direction.UP) < 5)
+                        or
+                    (self.lastStep == Direction.LEFT and
+                    self.look(Direction.LEFT) < 5)
+                        or
+                    (self.lastStep == Direction.RIGHT and
+                    self.look(Direction.RIGHT) < 5)
                 ):
-                    self.huntCounter = 1
+                    self.huntCounter = 0
                     return self.hunt()
+
                 return self.getRelativeDirection(Direction.LEFT)
 
             elif self.huntCounter % 9 == 4:
@@ -490,7 +513,7 @@ class CustomSnek(Snek):
             elif self.huntCounter % 9 == 5:
                 temp = self.look(self.getRelativeDirection(Direction.UP))
                 if temp < 19:
-                    self.appDis1 = temp
+                    self.appDis1 = temp - 1
                 return self.getRelativeDirection(Direction.RIGHT)
 
             elif self.huntCounter % 9 == 6:
@@ -502,13 +525,13 @@ class CustomSnek(Snek):
             elif self.huntCounter % 9 == 8:
                 temp = self.look(self.getRelativeDirection(Direction.UP))
                 if temp < 19:
-                    self.appDis3 = temp + 1
+                    self.appDis3 = temp
                 return self.getRelativeDirection(Direction.LEFT)
 
             elif self.huntCounter % 9 == 0:
                 temp = self.look(self.getRelativeDirection(Direction.RIGHT))
                 if temp < 19:
-                    self.appDis2 = temp + 1
+                    self.appDis2 = temp
 
                 if (
                     self.appDis1 < self.appDis2 or
@@ -521,22 +544,40 @@ class CustomSnek(Snek):
                         self.appDis2 = self.appDis1
                         self.appDis3 = self.appDis1
 
-                    self.targetCell = self.mapObj.fillCell(self.getRelativeDirection(Direction.RIGHT), self.appDis2 - 1)
+                    self.targetCell = self.mapObj.fillCell(self.getRelativeDirection(Direction.RIGHT), self.appDis2)
 
                 self.structSafeIgnore = False
                 return self.getRelativeDirection(Direction.RIGHT)
 
         elif self.huntStage == "cage":
             print("Called 'cage' mode")
+            self.circlePosStepper()
 
             # Cage building sequence
+            if self.huntCounter in range(1,3):
+                return self.getRelativeDirection(Direction.UP)
+
+            elif self.huntCounter in range(3, 5):
+                return self.getRelativeDirection(Direction.RIGHT)
+
+            elif self.huntCounter == 5:
+                self.huntCounter = 0
+                if self.look(self.getRelativeDirection(Direction.LEFT)) == 0:
+                    self.huntStage = "cageAlt"
+                    self.huntCounter = 0
+                    return self.hunt()
+                self.huntStage = "circle"
+                return self.getRelativeDirection(Direction.LEFT)
+
+
+        elif self.huntStage == "cageAlt":
             if self.huntCounter == 1:
                 return self.getRelativeDirection(Direction.UP)
 
-            elif self.huntCounter in range(2, 4):
-                return self.getRelativeDirection(Direction.RIGHT)
-
-            elif self.huntCounter == 4:
+            elif self.huntCounter == 2:
+                if self.look(self.getRelativeDirection(Direction.LEFT)) == 0:
+                    self.state = "escape"
+                    return self.escape()
                 self.huntStage = "circle"
                 self.huntCounter = 0
                 return self.getRelativeDirection(Direction.LEFT)
@@ -544,29 +585,68 @@ class CustomSnek(Snek):
 
         elif self.huntStage == "circle":
             print("Called 'circle' mode")
-            # If danger is on the snek's left (relative to last step) and direction of origin,
-            #     move in the direction clockwise from the direction of danger
-            # If danger is on the snek's left side ("), direction of origin, and forward direction ("),
-            #     move right (")
-            # If danger is on the snek's left("), origin, and right("),
-            #     move forward(")
-            # If no danger to the snek's left,
-            #     move left(")
+            self.circlePosStepper()
 
+            # If danger is to the snek's front, left, and rear...
+            if (
+                    not self.forwardSafe() and
+                    not self.leftSafe() and
+                    not self.rightSafe()
+            ):
+                if self.look(self.getRelativeDirection(Direction.RIGHT)) < 1:
+                    self.state = 'escape'
+                else:
+                    return self.getRelativeDirection(Direction.RIGHT)
 
+            # If snake is heading towards danger...
+            elif (
+                not self.q2safe()
+                or not self.forwardSafe()
+            ):
+                return self.getRelativeDirection(Direction.RIGHT)
 
-        # Check if extreme danger is on more than one side (unless building structure) ----DONE
-            # If danger is on all sides, ----DONE
-            #     switch to escape mode ----DONE
-        # All of this is for inside circle I need to plan for the other modes
+            # If danger is only on the snek's left...
+            elif (
+                self.q1safe() and
+                self.forwardSafe() and
+                not self.leftSafe() and
+                not self.q3safe()
+            ):
+                # move forward (rel*)
+                return self.getRelativeDirection(Direction.UP)
 
-        # Mark cells within 1/3 of step distance (use get distance from cell class) from original target of hunt
-        # (lowestDistance from search) as ignore
-        return self.lastStep
+            elif self.leftSafe():
+                return self.getRelativeDirection(Direction.LEFT)
+
+            print("Missed a case")
+            return self.lastStep
+
+    # TODO: Circle original pos stepper
+    def circlePosStepper(self):
+        if self.lastStep == Direction.UP:
+            self.huntStartPos[0] += 1
+            if self.huntStartPos[0] == 60:
+                self.huntStartPos[0] = 0
+
+        elif self.lastStep == Direction.LEFT:
+            self.huntStartPos[1] += 1
+            if self.huntStartPos[1] == 90:
+                self.huntStartPos[1] = 0
+
+        elif self.lastStep == Direction.RIGHT:
+            self.huntStartPos[1] -= 1
+            if self.huntStartPos[1] == -1:
+                self.huntStartPos[1] = 89
+
+        elif self.lastStep == Direction.DOWN:
+            self.huntStartPos[0] -= 1
+            if self.huntStartPos[0] == -1:
+                self.huntStartPos[0] = 59
+
 
     # TODO: Escape mode: <==============================================================================================
     def escape(self):
-        print("Called 'survive' mode")
+        print("Called 'escape' mode")
         return self.lastStep
 
     # TODO: Survive mode: <=============================================================================================
@@ -926,6 +1006,169 @@ class CustomSnek(Snek):
         return True
 
 
+    # TODO: Quarter safe checkers <=====================================================================================
+    def q1safe(self):
+        if self.lastStep == Direction.UP:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 - i][45 + j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.LEFT:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 - i][45 - j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.RIGHT:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 + i][45 + j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.DOWN:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 + i][45 - j].occupied:
+                        return False
+
+        return True
+
+
+    def q2safe(self):
+        if self.lastStep == Direction.UP:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 - i][45 - j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.LEFT:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 + i][45 - j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.RIGHT:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 - i][45 + j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.DOWN:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 + i][45 + j].occupied:
+                        return False
+
+        return True
+
+
+    def q3safe(self):
+        if self.lastStep == Direction.UP:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 + i][45 - j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.LEFT:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 + i][45 + j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.RIGHT:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 - i][45 - j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.DOWN:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 - i][45 + j].occupied:
+                        return False
+
+        return True
+
+
+    def q4safe(self):
+        if self.lastStep == Direction.UP:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 + i][45 + j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.LEFT:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 - i][45 + j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.RIGHT:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 + i][45 - j].occupied:
+                        return False
+
+        elif self.lastStep == Direction.DOWN:
+            for i in range(1, 3):
+                for j in range(1, 3):
+                    if i == j and i == 0:
+                        continue
+                    elif self.mapObj.map[30 - i][45 - j].occupied:
+                        return False
+
+        return True
+
+
+    def forwardSafe(self):
+        if self.look(self.getRelativeDirection(Direction.UP)) < 2:
+            return False
+        return True
+
+    def leftSafe(self):
+        if self.look(self.getRelativeDirection(Direction.LEFT)) < 2:
+            return False
+        return True
+
+    def rightSafe(self):
+        if self.look(self.getRelativeDirection(Direction.RIGHT)) < 2:
+            return False
+        return True
+
+    def backwardSafe(self):
+        return False
+        # look... don't judge me I thought this was hilarious.
 
 
 # TODO: Bottom c:
