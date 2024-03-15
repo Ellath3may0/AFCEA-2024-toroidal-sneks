@@ -101,7 +101,8 @@ class CustomSnek(Snek):
                 self.mapObj.map[y][x].updateRPos(y, x)
 
         # Updating each cell's accessibility
-        self.mapObj.updateAccess()
+        for i in range(2):
+            self.mapObj.updateAccess()
 
         # Get information about possible dangerous directions
         self.dangerData = self.mapObj.dangerData()
@@ -586,6 +587,9 @@ class CustomSnek(Snek):
         elif self.huntStage == "circle":
             #print("Called 'circle' mode")
             self.circlePosStepper()
+
+            if not self.leftSafe():
+                self.mapObj.fillCell(self.getRelativeDirection(Direction.LEFT), 0)
 
             if (
                 self.forwardSafe() and
