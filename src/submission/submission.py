@@ -867,6 +867,42 @@ class CustomSnek(Snek):
             self.map[30][45].occupied = True
             self.map[30][45].ignore = True
 
+
+        def look(self, direction: Direction):
+            found = False
+            i = 0
+            if direction == Direction.UP:
+                while not found:
+                    if self.map[30 - i][45].occupied:
+                        found = True
+                        break
+                    i += 1
+
+            elif direction == Direction.LEFT:
+                while not found:
+                    if self.map[30][45 - i].occupied:
+                        found = True
+                        break
+                    i += 1
+
+            elif direction == Direction.RIGHT:
+                while not found:
+                    if self.map[30][45 + i].occupied:
+                        found = True
+                        break
+                    i += 1
+
+            else:
+                while not found:
+                    if self.map[30][45 + i].occupied:
+                        found = True
+                        break
+                    i += 1
+
+            return i
+
+
+
         def updateAccess(self):
             for y in range(1, 59):
                 for x in range(1, 89):
@@ -1242,17 +1278,17 @@ class CustomSnek(Snek):
 
 
     def forwardSafe(self):
-        if self.look(self.getRelativeDirection(Direction.UP)) < 2:
+        if self.mapObj.look(self.getRelativeDirection(Direction.UP)) < 2:
             return False
         return True
 
     def leftSafe(self):
-        if self.look(self.getRelativeDirection(Direction.LEFT)) < 2:
+        if self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) < 2:
             return False
         return True
 
     def rightSafe(self):
-        if self.look(self.getRelativeDirection(Direction.RIGHT)) < 2:
+        if self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) < 2:
             return False
         return True
 
