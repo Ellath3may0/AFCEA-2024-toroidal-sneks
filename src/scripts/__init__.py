@@ -15,7 +15,7 @@ def validate():
 
 
 def run():
-    sneks_config.registrar_submission_sneks = 2
+    sneks_config.registrar_submission_sneks = 4
     sneks_config.runs = 1000000000000000
     sneks_config.turn_limit = 1000000000000
     sneks_config.registrar_prefix = prefix
