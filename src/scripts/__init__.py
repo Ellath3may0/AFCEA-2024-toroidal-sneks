@@ -35,4 +35,4 @@ def run():
 
     pr.disable()
     stats = pstats.Stats(pr)
-    stats.sort_stats("tottime").print_stats(20)
+    print(stats.sort_stats("tottime").print_stats(20))
