@@ -47,9 +47,6 @@ class CustomSnek(Snek):
     # Extreme danger data list
     extremeDangerData: list = None
 
-    # Found new cell?
-    foundNew = False
-
 
 
     # TODO: get_next_direction(); snek movin method c:
@@ -87,9 +84,6 @@ class CustomSnek(Snek):
         else:
             # Shift map relative to last snek movement
             self.mapObj.shiftMap(self.lastStep)
-
-            # Found new cell?
-            self.foundNew = False
 
             # Look around snek and fill in map
             self.mapFiller()
@@ -184,117 +178,116 @@ class CustomSnek(Snek):
         # Switching to hunt condition
         # If snek finds a non-ignored, occupied cell, it will set it as target and switch to hunt mode
         # find nearest non self-spawned occupied cell
-        if self.foundNew:
-            lowestDistance = 152
-            lowestIndices = [30, 45]
-            for i in range(60):
-                for j in range(90):
-                    if (self.mapObj.map[i][j].occupied and
-                        not self.mapObj.map[i][j].ignore
-                    ):
-                        self.mapObj.map[i][j].updateRPos(i, j)
-                        x = abs(self.mapObj.map[i][j].rPosX)
-                        y = abs(self.mapObj.map[i][j].rPosY)
-                        if x + y < lowestDistance:
-                            lowestDistance = x + y
-                            lowestIndices[0] = i
-                            lowestIndices[1] = j
-
-
-
-            if lowestDistance != 152:
-                self.state = "hunt"
-                self.huntCounter = 0
-                self.huntStage = "travelA"
-                self.huntStartPos = [30, 45]
-                self.targetCell = self.mapObj.map[lowestIndices[0]][lowestIndices[1]]
-                # print(self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosX, self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosY)
-
-
-                # if the target is in the same column as the head & the target is above the head ***OR***
-                # if the target is above the head & the target is farther horizontally than vertically
-
-                if (
-                    (self.targetCell.rPosX == 0 and
-                    self.targetCell.rPosY > 0) or
-                    (self.targetCell.rPosY > 0 and
-                    abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY))
+        lowestDistance = 152
+        lowestIndices = [30, 45]
+        for i in range(60):
+            for j in range(90):
+                if (self.mapObj.map[i][j].occupied and
+                    not self.mapObj.map[i][j].ignore
                 ):
-                    if self.targetCell.rPosX == 0:
-                        self.huntStage = "preTravelB"
-                        return self.hunt()
+                    self.mapObj.map[i][j].updateRPos(i, j)
+                    x = abs(self.mapObj.map[i][j].rPosX)
+                    y = abs(self.mapObj.map[i][j].rPosY)
+                    if x + y < lowestDistance:
+                        lowestDistance = x + y
+                        lowestIndices[0] = i
+                        lowestIndices[1] = j
 
 
-                    # if direction is safe...
-                    if self.isSafe(Direction.UP):
-                        return Direction.UP
 
-                    else:
-                        self.state = "search"
-
-
-                # if the target is in the same column as the head & the target is below the head ***OR***
-                # if the target is below the head & the target is further horizontally than vertically
-                elif (
-                    (self.targetCell.rPosX == 0 and
-                    self.targetCell.rPosY < 0) or
-                    (self.targetCell.rPosY < 0 and
-                    abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY))
-                ):
-                    if self.targetCell.rPosX == 0:
-                        self.huntStage = "preTravelB"
-                        return self.hunt()
-
-                    # if direction is safe
-                    if self.isSafe(Direction.DOWN):
-                        return Direction.DOWN
-
-                    else:
-                        self.state = "search"
+        if lowestDistance != 152:
+            self.state = "hunt"
+            self.huntCounter = 0
+            self.huntStage = "travelA"
+            self.huntStartPos = [30, 45]
+            self.targetCell = self.mapObj.map[lowestIndices[0]][lowestIndices[1]]
+            # print(self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosX, self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosY)
 
 
-                # if the target is left of the head & the target is in the same row as the head
-                # if the target is left of the head & the target is further vertically than horizontal
-                elif (
-                    (self.targetCell.rPosX < 0 and
-                    self.targetCell.rPosY == 0) or
-                    (self.targetCell.rPosX < 0 and
-                    abs(self.targetCell.rPosY) > abs(self.targetCell.rPosX)) or
-                    (self.targetCell.rPosY == self.targetCell.rPosX and
-                    self.targetCell.rPosX < 0)
-                ):
-                    if self.targetCell.rPosY == 0:
-                        self.huntStage = "preTravelB"
-                        return self.hunt()
+            # if the target is in the same column as the head & the target is above the head ***OR***
+            # if the target is above the head & the target is farther horizontally than vertically
 
-                    # if direction is safe
-                    if self.isSafe(Direction.LEFT):
-                        return Direction.LEFT
-
-                    else:
-                        self.state = "search"
+            if (
+                (self.targetCell.rPosX == 0 and
+                self.targetCell.rPosY > 0) or
+                (self.targetCell.rPosY > 0 and
+                abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY))
+            ):
+                if self.targetCell.rPosX == 0:
+                    self.huntStage = "preTravelB"
+                    return self.hunt()
 
 
-                # if the target is right of the head & the target is in the same row as the head
-                # if the target is right of the head & the target is further vertically than horizontal
-                elif (
-                    (self.targetCell.rPosX > 0 and
-                    self.targetCell.rPosY == 0) or
-                    (self.targetCell.rPosX > 0 and
-                    abs(self.targetCell.rPosY) > abs(self.targetCell.rPosX)) or
-                    (self.targetCell.rPosY == self.targetCell.rPosX and
-                    self.targetCell.rPosX > 0)
-                ):
-                    if self.targetCell.rPosY == 0:
-                        self.huntStage = "preTravelB"
-                        return self.hunt()
+                # if direction is safe...
+                if self.isSafe(Direction.UP):
+                    return Direction.UP
 
-                    # if direction is safe
-                    if self.isSafe(Direction.RIGHT):
-                        return Direction.RIGHT
+                else:
+                    self.state = "search"
 
-                    else:
-                        self.state = "search"
+
+            # if the target is in the same column as the head & the target is below the head ***OR***
+            # if the target is below the head & the target is further horizontally than vertically
+            elif (
+                (self.targetCell.rPosX == 0 and
+                self.targetCell.rPosY < 0) or
+                (self.targetCell.rPosY < 0 and
+                abs(self.targetCell.rPosX) > abs(self.targetCell.rPosY))
+            ):
+                if self.targetCell.rPosX == 0:
+                    self.huntStage = "preTravelB"
+                    return self.hunt()
+
+                # if direction is safe
+                if self.isSafe(Direction.DOWN):
+                    return Direction.DOWN
+
+                else:
+                    self.state = "search"
+
+
+            # if the target is left of the head & the target is in the same row as the head
+            # if the target is left of the head & the target is further vertically than horizontal
+            elif (
+                (self.targetCell.rPosX < 0 and
+                self.targetCell.rPosY == 0) or
+                (self.targetCell.rPosX < 0 and
+                abs(self.targetCell.rPosY) > abs(self.targetCell.rPosX)) or
+                (self.targetCell.rPosY == self.targetCell.rPosX and
+                self.targetCell.rPosX < 0)
+            ):
+                if self.targetCell.rPosY == 0:
+                    self.huntStage = "preTravelB"
+                    return self.hunt()
+
+                # if direction is safe
+                if self.isSafe(Direction.LEFT):
+                    return Direction.LEFT
+
+                else:
+                    self.state = "search"
+
+
+            # if the target is right of the head & the target is in the same row as the head
+            # if the target is right of the head & the target is further vertically than horizontal
+            elif (
+                (self.targetCell.rPosX > 0 and
+                self.targetCell.rPosY == 0) or
+                (self.targetCell.rPosX > 0 and
+                abs(self.targetCell.rPosY) > abs(self.targetCell.rPosX)) or
+                (self.targetCell.rPosY == self.targetCell.rPosX and
+                self.targetCell.rPosX > 0)
+            ):
+                if self.targetCell.rPosY == 0:
+                    self.huntStage = "preTravelB"
+                    return self.hunt()
+
+                # if direction is safe
+                if self.isSafe(Direction.RIGHT):
+                    return Direction.RIGHT
+
+                else:
+                    self.state = "search"
 
 # TODO: Replace "escape" states with the 'move-around-it' algorithm (idk what I'm doing)================================
 
@@ -364,11 +357,12 @@ class CustomSnek(Snek):
         # Stage 1 of travel
         # Make shorter distance translation
         if self.huntStage == "travelA":
+            #print("travelA")
             for i in range(60):
                 for j in range(90):
                     if self.mapObj.map[i][j] is self.targetCell:
                         self.targetCell.updateRPos(i, j)
-            #print("travelA")
+
             if self.lastStep == Direction.UP or self.lastStep == Direction.DOWN:
                 # if reached correct position, switch to travel stage 2
                 if self.targetCell.rPosY == 0:
@@ -401,6 +395,7 @@ class CustomSnek(Snek):
 
 
         elif self.huntStage == "preTravelB":
+            #print("Called preTravelB")
             for i in range(60):
                 for j in range(90):
                     if self.mapObj.map[i][j] is self.targetCell:
@@ -903,33 +898,36 @@ class CustomSnek(Snek):
 
 
         def look(self, direction: Direction):
-            found = False
             i = 0
             if direction == Direction.UP:
-                while not found:
-                    if self.map[30 - i][45].occupied:
-                        found = True
+                while True:
+                    if self.map[29 - i][45].occupied:
+                        break
+                    if i >= 19:
                         break
                     i += 1
 
             elif direction == Direction.LEFT:
-                while not found:
-                    if self.map[30][45 - i].occupied:
-                        found = True
+                while True:
+                    if self.map[30][44 - i].occupied:
+                        break
+                    if i >= 19:
                         break
                     i += 1
 
             elif direction == Direction.RIGHT:
-                while not found:
-                    if self.map[30][45 + i].occupied:
-                        found = True
+                while True:
+                    if self.map[30][46 + i].occupied:
+                        break
+                    if i >= 19:
                         break
                     i += 1
 
             else:
-                while not found:
-                    if self.map[30][45 + i].occupied:
-                        found = True
+                while True:
+                    if self.map[31 + i][45].occupied:
+                        break
+                    if i >= 19:
                         break
                     i += 1
 
@@ -969,42 +967,6 @@ class CustomSnek(Snek):
                         if ignoreCounter >= 3:
                             currentCell.ignore = True
 
-
-        def look(self, direction: Direction):
-            distance = 0
-            if direction is Direction.UP:
-                for i in range(20):
-                    if self.map[29 - i][45].occupied:
-                        distance = i
-                        break
-                    if i == 19:
-                        distance = 19
-
-            elif direction is Direction.LEFT:
-                for i in range(20):
-                    if self.map[30][44 - i].occupied:
-                        distance = i
-                        break
-                    if i == 19:
-                        distance = 19
-
-            elif direction is Direction.RIGHT:
-                for i in range(20):
-                    if self.map[30][46 + i].occupied:
-                        distance = i
-                        break
-                    if i == 19:
-                        distance = 19
-
-            else:
-                for i in range(20):
-                    if self.map[31 + i][45].occupied:
-                        distance = i
-                        break
-                    if i == 19:
-                        distance = 19
-
-            return distance
 
         # TODO: Map.shiftMap()
         # Move the map relative to where the snek moved this step
@@ -1189,9 +1151,7 @@ class CustomSnek(Snek):
     def mapFiller(self) -> None:
         # Fill cell the return from snek.look(Dir*) for each direction
         for direction in Direction:
-            if self.foundNew:
-                self.mapObj.fillCell(direction, self.look(direction))
-            self.foundNew = self.mapObj.fillCell(direction, self.look(direction))
+            self.mapObj.fillCell(direction, self.look(direction))
 
 
     # TODO: isSafe()
