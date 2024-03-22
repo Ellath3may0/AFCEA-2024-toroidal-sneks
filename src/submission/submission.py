@@ -1347,31 +1347,16 @@ class CustomSnek(Snek):
 
 
     def forwardSafe(self):
-<<<<<<< Updated upstream
-=======
-        #print("Forward safe", end=": ")
-        #print(self.mapObj.look(self.getRelativeDirection(Direction.UP)), self.getRelativeDirection(Direction.UP))
->>>>>>> Stashed changes
         if self.mapObj.look(self.getRelativeDirection(Direction.UP)) < 2:
             return False
         return True
 
     def leftSafe(self):
-<<<<<<< Updated upstream
-=======
-        #print("Left safe", end=": ")
-        #print(self.mapObj.look(self.getRelativeDirection(Direction.LEFT)), self.getRelativeDirection(Direction.LEFT))
->>>>>>> Stashed changes
         if self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) < 2:
             return False
         return True
 
     def rightSafe(self):
-<<<<<<< Updated upstream
-=======
-        #print("Right safe", end=": ")
-        #print(self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)), self.getRelativeDirection(Direction.RIGHT))
->>>>>>> Stashed changes
         if self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) < 2:
             return False
         return True
