@@ -2,6 +2,8 @@
 from sneks.engine.core.direction import Direction
 from sneks.engine.interface.snek import Snek
 
+import random as r
+
 '''
 DISCLAIMER!!!
 
@@ -204,7 +206,8 @@ class CustomSnek(Snek):
             # print(self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosX, self.mapObj.map[lowestIndices[0]][lowestIndices[1]].rPosY)
 
 
-            # if the target is in the same column as the head & the target is above the head ***OR***
+            # if the target is in the same column as the head & the target is above the head
+            # ***OR***
             # if the target is above the head & the target is farther horizontally than vertically
 
             if (
@@ -349,19 +352,23 @@ class CustomSnek(Snek):
 
     tbClose = False
 
+    cageDir = False
+
     # TODO: Hunting mode: <=============================================================================================
     def hunt(self):
         #print(self.targetCell.rPosX, self.targetCell.rPosY)
         self.huntCounter += 1
 
+        for i in range(60):
+            for j in range(90):
+                if self.mapObj.map[i][j] is self.targetCell:
+                    self.targetCell.updateRPos(i, j)
+
         # Stage 1 of travel
         # Make shorter distance translation
         if self.huntStage == "travelA":
             #print("travelA")
-            for i in range(60):
-                for j in range(90):
-                    if self.mapObj.map[i][j] is self.targetCell:
-                        self.targetCell.updateRPos(i, j)
+
 
             if self.lastStep == Direction.UP or self.lastStep == Direction.DOWN:
                 # if reached correct position, switch to travel stage 2
@@ -402,11 +409,15 @@ class CustomSnek(Snek):
                         self.targetCell.updateRPos(i, j)
 
             if self.mapObj.look(self.getTargetCellDirection()) < 2 and self.huntCounter == 1:
+                if self.mapObj.look(self.getRelativeDirection(Direction.RIGHT, self.getTargetCellDirection())) == 0:
+                    self.cageDir = True
+                else:
+                    self.cageDir = False
                 self.huntStage = "circle"
                 self.huntCounter = 0
                 return self.hunt()
 
-            elif self.mapObj.look(self.getTargetCellDirection()) < 5:
+            elif self.mapObj.look(self.getTargetCellDirection()) < 6:
                 self.tbClose = True
                 if self.huntCounter == 1:
                     if self.mapObj.look(self.getRelativeDirection(Direction.RIGHT, self.getTargetCellDirection())) != 0:
@@ -469,7 +480,7 @@ class CustomSnek(Snek):
             # While travelling straight...
             if self.huntCounter % 9 < 3 and not self.huntCounter == 0:
                 #print(self.huntCounter % 9)
-                if self.look(self.getTargetCellDirection()) < 3:
+                if self.mapObj.look(self.getTargetCellDirection()) < 3:
                     self.appDis1 = 91
                     self.appDis2 = 91
                     self.appDis3 = 91
@@ -493,7 +504,7 @@ class CustomSnek(Snek):
             '''
             if self.huntCounter % 9 == 3:
                 self.structSafeIgnore = True
-                if self.look(self.getTargetCellDirection()) < 5:
+                if self.look(self.getTargetCellDirection()) < 6:
                     self.huntCounter = 0
                     return self.hunt()
 
@@ -549,46 +560,70 @@ class CustomSnek(Snek):
                 self.structSafeIgnore = False
                 return self.getRelativeDirection(Direction.RIGHT)
 
-            #print(self.huntCounter % 9)
-            #print(self.structSafeIgnore)
-
         elif self.huntStage == "cage":
-            '''if self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) == 0:
-                self.huntStage = "cageL"
-                self.huntCounter = 0
-                return self.hunt()'''
 
             #print("Called 'cage' mode")
             self.circlePosStepper()
+            print(self.huntCounter)
 
             if self.huntCounter == 1:
-                self.huntCounter = 3 - self.look(self.getTargetCellDirection())
+                self.cageDir = False
+                self.huntCounter = 3 - self.mapObj.look(self.getTargetCellDirection())
 
             # Cage building sequence
-            if self.huntCounter in range(1,3):
+            if self.huntCounter in range(1, 3):
                 return self.getRelativeDirection(Direction.UP, self.getTargetCellDirection())
 
             elif self.huntCounter == 3:
-                return self.getRelativeDirection(Direction.RIGHT, self.getTargetCellDirection())
+                left = self.mapObj.look(self.getRelativeDirection(Direction.LEFT, self.getTargetCellDirection()))
+                right = self.mapObj.look(self.getRelativeDirection(Direction.RIGHT, self.getTargetCellDirection()))
 
-            elif self.huntCounter == 4:
-                return self.getRelativeDirection(Direction.RIGHT)
+                if left != 0 and right != 0:
+                    self.cageDir = bool(r.getrandbits(1))
 
-            elif self.huntCounter == 5:
-                self.huntCounter = 0
-                if self.look(self.getRelativeDirection(Direction.LEFT)) == 0:
-                    self.huntStage = "cageAlt"
+                elif left == 0:
+                    self.cageDir = False
+
+                elif right == 0:
+                    self.cageDir = True
+
+                if self.cageDir:
+                    return self.getRelativeDirection(Direction.LEFT, self.getTargetCellDirection())
+                else:
+                    return self.getRelativeDirection(Direction.RIGHT, self.getTargetCellDirection())
+
+            if not self.cageDir:
+
+                if self.huntCounter == 4:
+                    return self.getRelativeDirection(Direction.RIGHT)
+
+                elif self.huntCounter == 5:
                     self.huntCounter = 0
-                    return self.hunt()
-                self.huntStage = "circle"
-                return self.getRelativeDirection(Direction.LEFT)
+                    if self.look(self.getRelativeDirection(Direction.LEFT)) == 0:
+                        self.huntStage = "cageAlt"
+                        return self.hunt()
+                    self.huntStage = "circle"
+                    return self.getRelativeDirection(Direction.LEFT)
+
+            else:
+
+                if self.huntCounter == 4:
+                    return self.getRelativeDirection(Direction.LEFT)
+
+                elif self.huntCounter == 5:
+                    self.huntCounter = 0
+                    if self.look(self.getRelativeDirection(Direction.RIGHT)) == 0:
+                        self.huntStage = "cageAlt"
+                        return self.hunt()
+                    self.huntStage = "circle"
+                    return self.getRelativeDirection(Direction.RIGHT)
 
 
         elif self.huntStage == "cageAlt":
             if self.huntCounter == 1:
                 return self.getRelativeDirection(Direction.UP)
 
-            elif self.huntCounter == 2:
+            elif self.huntCounter == 2 and self.cageDir == False:
                 if self.look(self.getRelativeDirection(Direction.LEFT)) == 0:
                     self.state = "survive"
                     return self.survive()
@@ -596,91 +631,240 @@ class CustomSnek(Snek):
                 self.huntCounter = 0
                 return self.getRelativeDirection(Direction.LEFT)
 
+            else:
+                if self.look(self.getRelativeDirection(Direction.RIGHT)) == 0:
+                    self.state = "survive"
+                    return self.survive()
+                self.huntStage = "circle"
+                self.huntCounter = 0
+                return self.getRelativeDirection(Direction.RIGHT)
+
 
         elif self.huntStage == "circle":
             #print("Called 'circle' mode")
             self.circlePosStepper()
 
-            if (
-                not self.leftSafe() and
-                not self.rightSafe() and
-                not self.forwardSafe() and
-                not self.backwardSafe() # hehe I used it
-            ):
-                self.state = "survive"
-                return self.survive()
 
-            elif (
-                self.forwardSafe() and
-                not self.leftSafe() and
-                not self.rightSafe()
-            ):
-                self.lastStep = self.getRelativeDirection(Direction.UP)
-
-            elif (self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) < 2 and
-                self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) > 0
-            ):
-                self.lastStep = self.getRelativeDirection(Direction.RIGHT)
-
-
-            # If danger is to the snek's front, left, and rear...
-            elif (
-                    not self.forwardSafe() and
+            if not self.cageDir:
+                if (
                     not self.leftSafe() and
+                    not self.rightSafe() and
+                    not self.forwardSafe() and
+                    not self.backwardSafe() # hehe I used it
+                ):
+                    self.state = "survive"
+                    return self.survive()
+
+                elif (
+                    self.forwardSafe() and
+                    not self.leftSafe() and
+                    not self.rightSafe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.UP)
+
+
+                elif (
+                    self.forwardSafe() and
+                    not self.leftSafe() and
+                    self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) > 0 and
                     self.rightSafe()
-            ):
-                self.lastStep = self.getRelativeDirection(Direction.RIGHT)
-
-            elif (
-                not self.forwardSafe() and
-                not self.rightSafe() and
-                self.leftSafe() and
-                self.q2safe()
-            ):
-                self.lastStep = self.getRelativeDirection(Direction.LEFT)
-
-            # If snake is heading towards danger...
-            elif (
-                not self.forwardSafe() and
-                self.look(self.getRelativeDirection(Direction.RIGHT)) > 0
-            ):
-                self.lastStep = self.getRelativeDirection(Direction.RIGHT)
-
-            elif (
-                self.look(self.getRelativeDirection(Direction.UP)) > 0 and
-                not self.leftSafe() and
-                not self.rightSafe() and
-                not self.forwardSafe()
-            ):
-                self.lastStep = self.getRelativeDirection(Direction.UP)
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.UP)
 
 
-            # If danger is only on the snek's left...
-            elif (
-                self.q1safe() and
-                self.forwardSafe()
-                and self.rightSafe() and
-                not self.leftSafe() and
-                not self.q3safe()
-            ):
-                # move forward (rel*)
-                self.lastStep = self.getRelativeDirection(Direction.UP)
+                elif (self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) < 2 and
+                    self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) > 0
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.RIGHT)
 
-            elif (
-                not self.q2safe() and
-                self.leftSafe() and
-                self.rightSafe() and
-                self.forwardSafe()
-            ):
-                self.lastStep = self.getRelativeDirection(Direction.RIGHT)
 
-            elif self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) > 0:
-                self.lastStep = self.getRelativeDirection(Direction.LEFT)
+                # If danger is to the snek's front, left, and rear...
+                elif (
+                        not self.forwardSafe() and
+                        not self.leftSafe() and
+                        self.rightSafe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.RIGHT)
+
+
+                elif (
+                    self.forwardSafe() and
+                    not self.rightSafe() and
+                    self.leftSafe() and
+                    self.q2safe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.LEFT)
+
+                # If snake is heading towards danger...
+                elif (
+                    not self.forwardSafe() and
+                    self.look(self.getRelativeDirection(Direction.RIGHT)) > 0
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.RIGHT)
+
+
+                # If danger is only on the snek's left...
+                elif (
+                    self.q1safe() and
+                    self.forwardSafe()
+                    and self.rightSafe() and
+                    not self.leftSafe() and
+                    not self.q3safe()
+                ):
+                    # move forward (rel*)
+                    self.lastStep = self.getRelativeDirection(Direction.UP)
+
+                elif (
+                    not self.q2safe() and
+                    self.leftSafe() and
+                    self.rightSafe() and
+                    self.forwardSafe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.RIGHT)
+
+                elif self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) > 0 and self.q2safe():
+                    self.lastStep = self.getRelativeDirection(Direction.LEFT)
+
+                else:
+                    print("no case has been found ===================================")
+                    self.state = "survive"
+                    return self.survive()
+
+                if self.lastStep == self.getRelativeDirection(Direction.RIGHT):
+                    if (
+                        self.lastStep == Direction.UP and
+                        self.mapObj.map[29 - self.mapObj.look(Direction.UP)][45].ignore and
+                        self.mapObj.look(Direction.RIGHT) > 0
+                    ):
+                            self.lastStep = Direction.RIGHT
+                    elif (
+                        self.lastStep == Direction.RIGHT and
+                        self.mapObj.map[30][46 + self.mapObj.look(Direction.RIGHT)].ignore and
+                        self.mapObj.look(Direction.DOWN) > 0
+                    ):
+                        self.lastStep = Direction.DOWN
+                    elif (
+                        self.lastStep == Direction.LEFT and
+                        self.mapObj.map[30][44 - self.mapObj.look(Direction.LEFT)].ignore and
+                        self.mapObj.look(Direction.UP) > 0
+                    ):
+                        self.lastStep = Direction.UP
+                    elif (
+                        self.lastStep == Direction.DOWN and
+                        self.mapObj.map[31 + self.mapObj.look(Direction.DOWN)].ignore and
+                        self.mapObj.look(Direction.LEFT) > 0
+                    ):
+                        self.lastStep = Direction.LEFT
+
 
             else:
-                print("no case has been found ===================================")
-                self.state = "survive"
-                return self.survive()
+
+                if (
+                        not self.leftSafe() and
+                        not self.rightSafe() and
+                        not self.forwardSafe() and
+                        not self.backwardSafe()  # hehe I used it
+                ):
+                    self.state = "survive"
+                    return self.survive()
+
+                elif (
+                        self.forwardSafe() and
+                        not self.leftSafe() and
+                        not self.rightSafe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.UP)
+
+                elif (
+                    self.forwardSafe() and
+                    self.leftSafe() and
+                    self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) > 0 and
+                    not self.rightSafe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.UP)
+
+                elif (self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) < 2 and
+                      self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) > 0
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.LEFT)
+
+
+                # If danger is to the snek's front, right, and rear...
+                elif (
+                        not self.forwardSafe() and
+                        not self.rightSafe() and
+                        self.leftSafe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.LEFT)
+
+                elif (
+                        self.forwardSafe() and
+                        not self.leftSafe() and
+                        self.rightSafe() and
+                        self.q1safe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.RIGHT)
+
+                # If snake is heading towards danger...
+                elif (
+                        not self.forwardSafe() and
+                        self.look(self.getRelativeDirection(Direction.LEFT)) > 0
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.LEFT)
+
+
+                # If danger is only on the snek's right...
+                elif (
+                        self.q2safe() and
+                        self.forwardSafe() and
+                        not self.rightSafe() and
+                        self.leftSafe() and
+                        not self.q4safe()
+                ):
+                    # move forward (rel*)
+                    self.lastStep = self.getRelativeDirection(Direction.UP)
+
+                elif (
+                        not self.q1safe() and
+                        self.leftSafe() and
+                        self.rightSafe() and
+                        self.forwardSafe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.LEFT)
+
+                elif self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) > 0 and self.q1safe():
+                    self.lastStep = self.getRelativeDirection(Direction.RIGHT)
+
+                else:
+                    print("no case has been found ===================================")
+                    self.state = "survive"
+                    return self.survive()
+
+                if self.lastStep == self.getRelativeDirection(Direction.RIGHT):
+                    if (
+                        self.lastStep == Direction.UP and
+                        self.mapObj.map[29 - self.mapObj.look(Direction.UP)][45].ignore and
+                        self.mapObj.look(Direction.RIGHT) > 0
+                    ):
+                            self.lastStep = Direction.RIGHT
+                    elif (
+                        self.lastStep == Direction.RIGHT and
+                        self.mapObj.map[30][46 + self.mapObj.look(Direction.RIGHT)].ignore and
+                        self.mapObj.look(Direction.DOWN) > 0
+                    ):
+                        self.lastStep = Direction.DOWN
+                    elif (
+                        self.lastStep == Direction.LEFT and
+                        self.mapObj.map[30][44 - self.mapObj.look(Direction.LEFT)].ignore and
+                        self.mapObj.look(Direction.UP) > 0
+                    ):
+                        self.lastStep = Direction.UP
+                    elif (
+                        self.lastStep == Direction.DOWN and
+                        self.mapObj.map[31 + self.mapObj.look(Direction.DOWN)].ignore and
+                        self.mapObj.look(Direction.LEFT) > 0
+                    ):
+                        self.lastStep = Direction.LEFT
 
             return self.lastStep
 
