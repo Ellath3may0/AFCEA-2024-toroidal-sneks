@@ -111,8 +111,7 @@ class CustomSnek(Snek):
     # TODO: get_next_direction().[debug printers] <----------------------------------------------------------------------
 
         # map
-        '''
-        for i in range(60):
+        '''for i in range(60):
             for j in range(90):
                 if i == 30 and j == 45:
                     print("H", end=" ")
@@ -120,6 +119,9 @@ class CustomSnek(Snek):
                     print(self.mapObj.map[i][j], end=" ")
             print()
         print()'''
+
+        # Snek mode
+        '''print("State: " + self.state)'''
 
         # Map with relative positions
         '''
@@ -293,6 +295,9 @@ class CustomSnek(Snek):
                 else:
                     self.state = "search"
 
+            else:
+                return self.hunt()
+
 # TODO: Replace "escape" states with the 'move-around-it' algorithm (idk what I'm doing)================================
 
         self.searchStep += 1
@@ -407,6 +412,9 @@ class CustomSnek(Snek):
         #print(self.targetCell.rPosX, self.targetCell.rPosY)
         self.huntCounter += 1
 
+        # Hunt debug printer
+        #print("Hunt Stage" + self.huntStage)
+
         for i in range(60):
             for j in range(90):
                 if self.mapObj.map[i][j] is self.targetCell:
@@ -430,8 +438,6 @@ class CustomSnek(Snek):
                         self.dangerData.index(self.lastStep)
                     except ValueError:
                         return self.lastStep
-                    self.state = "survive"
-                    return self.survive()
 
             elif self.lastStep == Direction.RIGHT or self.lastStep == Direction.LEFT:
                 # if reached correct position, switch to travel stage 2
@@ -445,8 +451,6 @@ class CustomSnek(Snek):
                         self.dangerData.index(self.lastStep)
                     except ValueError:
                         return self.lastStep
-                    self.state = "survive"
-                    return self.survive()
 
 
         elif self.huntStage == "preTravelB":
@@ -529,7 +533,7 @@ class CustomSnek(Snek):
             #print("travelB")
 
             # While travelling straight...
-            if self.huntCounter % 9 < 3 and not self.huntCounter == 0:
+            if self.huntCounter % 9 in range(1, 3):
                 #print(self.huntCounter % 9)
                 if self.mapObj.look(self.getTargetCellDirection()) < 3:
                     self.appDis1 = 91
@@ -557,6 +561,7 @@ class CustomSnek(Snek):
                 self.structSafeIgnore = True
                 if self.look(self.getTargetCellDirection()) < 6:
                     self.huntCounter = 0
+                    self.structSafeIgnore = False
                     return self.hunt()
 
                 return self.getRelativeDirection(Direction.LEFT)
@@ -588,8 +593,8 @@ class CustomSnek(Snek):
                     self.appDis2 = temp
 
                 if (
-                    self.appDis1 < self.appDis2 or
-                    self.appDis3 < self.appDis2
+                    self.appDis1 != self.appDis2 or
+                    self.appDis3 != self.appDis2
                 ):
                     if self.appDis2 > self.appDis3:
                         self.appDis2 = self.appDis3
@@ -600,13 +605,21 @@ class CustomSnek(Snek):
 
                     self.mapObj.fillCell(self.getRelativeDirection(Direction.RIGHT), self.appDis2)
                     if self.getRelativeDirection(Direction.RIGHT) == Direction.LEFT:
-                        self.targetCell = self.mapObj.map[30][44 - self.appDis2]
+                        self.mapObj.map[29][44 - self.appDis2].occupied = True
+                        self.mapObj.map[30][44 - self.appDis2].occupied = True
+                        self.mapObj.map[31][44 - self.appDis2].occupied = True
                     elif self.getRelativeDirection(Direction.RIGHT) == Direction.UP:
-                        self.targetCell = self.mapObj.map[29 - self.appDis2]
+                        self.mapObj.map[29 - self.appDis2][44].occupied = True
+                        self.mapObj.map[29 - self.appDis2][45].occupied = True
+                        self.mapObj.map[29 - self.appDis2][46].occupied = True
                     elif self.getRelativeDirection(Direction.RIGHT) == Direction.RIGHT:
-                        self.targetCell = self.mapObj.map[30][46 + self.appDis2]
+                        self.mapObj.map[29][46 + self.appDis2].occupied = True
+                        self.mapObj.map[30][46 + self.appDis2].occupied = True
+                        self.mapObj.map[31][46 + self.appDis2].occupied = True
                     elif self.getRelativeDirection(Direction.RIGHT) == Direction.DOWN:
-                        self.targetCell = self.mapObj.map[31 + self.appDis2][45]
+                        self.mapObj.map[31 + self.appDis2][44].occupied = True
+                        self.mapObj.map[31 + self.appDis2][45].occupied = True
+                        self.mapObj.map[31 + self.appDis2][46].occupied = True
 
                 self.structSafeIgnore = False
                 return self.getRelativeDirection(Direction.RIGHT)
@@ -615,7 +628,7 @@ class CustomSnek(Snek):
 
             #print("Called 'cage' mode")
             self.circlePosStepper()
-            print(self.huntCounter)
+            #print(self.huntCounter)
 
             if self.huntCounter == 1:
                 self.cageDir = False
@@ -626,8 +639,22 @@ class CustomSnek(Snek):
                 return self.getRelativeDirection(Direction.UP, self.getTargetCellDirection())
 
             elif self.huntCounter == 3:
+
                 left = self.mapObj.look(self.getRelativeDirection(Direction.LEFT, self.getTargetCellDirection()))
                 right = self.mapObj.look(self.getRelativeDirection(Direction.RIGHT, self.getTargetCellDirection()))
+
+                if self.mapObj.look(self.getRelativeDirection(Direction.DOWN, self.getTargetCellDirection())) == 0:
+                    self.huntCounter = 0
+                    self.huntStage = "circle"
+                    if left != 0:
+                        self.cageDir = True
+                        return self.getRelativeDirection(Direction.LEFT)
+                    elif right != 0:
+                        self.cageDir = False
+                        return self.getRelativeDirection(Direction.RIGHT)
+                    else:
+                        #Sewerslide
+                        return self.getRelativeDirection(Direction.DOWN)
 
                 if left != 0 and right != 0:
                     self.cageDir = bool(r.getrandbits(1))
@@ -675,17 +702,17 @@ class CustomSnek(Snek):
                 return self.getRelativeDirection(Direction.UP)
 
             elif self.huntCounter == 2 and self.cageDir == False:
-                if self.look(self.getRelativeDirection(Direction.LEFT)) == 0:
+                '''if self.look(self.getRelativeDirection(Direction.LEFT)) == 0:
                     self.state = "survive"
-                    return self.survive()
+                    return self.survive()'''
                 self.huntStage = "circle"
                 self.huntCounter = 0
                 return self.getRelativeDirection(Direction.LEFT)
 
             else:
-                if self.look(self.getRelativeDirection(Direction.RIGHT)) == 0:
+                '''if self.look(self.getRelativeDirection(Direction.RIGHT)) == 0:
                     self.state = "survive"
-                    return self.survive()
+                    return self.survive()'''
                 self.huntStage = "circle"
                 self.huntCounter = 0
                 return self.getRelativeDirection(Direction.RIGHT)
@@ -695,12 +722,15 @@ class CustomSnek(Snek):
             #print("Called 'circle' mode")
             self.circlePosStepper()
 
-            if self.huntCounter > 200:
-                self.huntStage = "exit"
-                self.hunt()
 
-            # Circle exit condition
-            if (
+            # Circle exit conditions
+            '''if self.huntCounter > 200:
+                if self.cellDir(self.getTargetCellDirection()).ignore:
+                    self.huntStage = "exit"
+                    self.huntCounter = 0
+                    return self.hunt()
+
+            elif (
                 self.targetCell.rPosX == 0 and
                 abs(self.targetCell.rPosY) < 4 and
                 self.huntCounter > 10
@@ -711,29 +741,42 @@ class CustomSnek(Snek):
             ):
                 if abs(self.targetCell.rPosX) + abs(self.targetCell.rPosY) <= 2:
                     self.huntStage = "exit"
+                    self.huntCounter = 0
                     return self.hunt()
 
-                else:
-                    if self.mapObj.look(self.getTargetCellDirection()) <\
-                            abs(self.targetCell.rPosX) + abs(self.targetCell.rPosX)\
-                    :
-                        if self.mapObj.look(self.getTargetCellDirection()) < 1:
-                            self.huntStage = "exit"
-                            return self.hunt()
+                elif (
+                    self.mapObj.look(self.getTargetCellDirection()) < abs(self.targetCell.rPosX)
+                    + abs(self.targetCell.rPosY) < 4 and
+                    self.cellDir(self.getTargetCellDirection()).ignore
+                ):
+                    if self.mapObj.look(self.getTargetCellDirection()) < 1:
+                        self.huntStage = "exit"
+                        self.huntCounter = 0
+                        return self.hunt()
 
-                    return self.getTargetCellDirection()
+                    return self.getTargetCellDirection()'''
 
 
-
+            # Circling Conditions
             if not self.cageDir:
-                if (
-                    not self.leftSafe() and
-                    not self.rightSafe() and
-                    not self.forwardSafe() and
-                    not self.backwardSafe() # hehe I used it
+
+                # This code has been moved temporarily
+                '''elif (
+                        not self.leftSafe() and
+                        not self.rightSafe() and
+                        not self.forwardSafe() and
+                        not self.backwardSafe() # hehe I used it
                 ):
                     self.state = "survive"
-                    return self.survive()
+                    return self.survive()'''
+
+                if (
+                    self.huntCounter == 1 and
+                    self.leftSafe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.LEFT)
+
+
 
                 elif (
                     self.forwardSafe() and
@@ -763,7 +806,13 @@ class CustomSnek(Snek):
                         not self.forwardSafe() and
                         not self.leftSafe() and
                         self.rightSafe()
+                    or
+                        not self.forwardSafe() and
+                        not self.leftSafe() and
+                        self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) == 1
                 ):
+                    if self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) == 1 and not self.q4safe():
+                        '''self.state = "survive"'''
                     self.lastStep = self.getRelativeDirection(Direction.RIGHT)
 
 
@@ -802,13 +851,20 @@ class CustomSnek(Snek):
                 ):
                     self.lastStep = self.getRelativeDirection(Direction.RIGHT)
 
-                elif self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) > 0 and self.q2safe():
+                elif (
+                        not self.leftSafe() and
+                        self.rightSafe() and
+                        not self.forwardSafe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.RIGHT)
+
+                elif self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) > 1 and self.q2safe():
                     self.lastStep = self.getRelativeDirection(Direction.LEFT)
 
                 else:
                     print("no case has been found ===================================")
-                    self.state = "survive"
-                    return self.survive()
+                    '''self.state = "survive"
+                    return self.survive()'''
 
                 if self.lastStep == self.getRelativeDirection(Direction.RIGHT):
                     if (
@@ -816,7 +872,7 @@ class CustomSnek(Snek):
                         self.mapObj.map[29 - self.mapObj.look(Direction.UP)][45].ignore and
                         self.mapObj.look(Direction.RIGHT) > 0
                     ):
-                            self.lastStep = Direction.RIGHT
+                        self.lastStep = Direction.RIGHT
                     elif (
                         self.lastStep == Direction.RIGHT and
                         self.mapObj.map[30][46 + self.mapObj.look(Direction.RIGHT)].ignore and
@@ -836,17 +892,29 @@ class CustomSnek(Snek):
                     ):
                         self.lastStep = Direction.LEFT
 
+                return self.lastStep
+
 
             else:
 
-                if (
+                if self.huntCounter == 1:
+                    if self.rightSafe():
+                        self.lastStep = self.getRelativeDirection(Direction.RIGHT)
+
+                    elif self.forwardSafe():
+                        self.lastStep = self.getRelativeDirection(Direction.UP)
+
+                    else: self.lastStep = self.getRelativeDirection(Direction.LEFT)
+
+
+                elif (
                         not self.leftSafe() and
                         not self.rightSafe() and
                         not self.forwardSafe() and
                         not self.backwardSafe()  # hehe I used it
                 ):
-                    self.state = "survive"
-                    return self.survive()
+                    '''self.state = "survive"
+                    return self.survive()'''
 
                 elif (
                         self.forwardSafe() and
@@ -874,7 +942,13 @@ class CustomSnek(Snek):
                         not self.forwardSafe() and
                         not self.rightSafe() and
                         self.leftSafe()
+                    or
+                        not self.forwardSafe() and
+                        not self.rightSafe() and
+                        self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) == 1
                 ):
+                    if self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) == 1 and not self.q3safe():
+                        '''self.state = "survive"'''
                     self.lastStep = self.getRelativeDirection(Direction.LEFT)
 
                 elif (
@@ -912,58 +986,101 @@ class CustomSnek(Snek):
                 ):
                     self.lastStep = self.getRelativeDirection(Direction.LEFT)
 
-                elif self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) > 0 and self.q1safe():
+                elif (
+                    self.leftSafe() and
+                    not self.rightSafe() and
+                    not self.forwardSafe()
+                ):
+                    self.lastStep = self.getRelativeDirection(Direction.LEFT)
+
+                elif self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) > 1 and self.q1safe():
                     self.lastStep = self.getRelativeDirection(Direction.RIGHT)
 
                 else:
                     print("no case has been found ===================================")
-                    self.state = "survive"
-                    return self.survive()
+                    '''self.state = "survive"
+                    return self.survive()'''
 
-                if self.lastStep == self.getRelativeDirection(Direction.RIGHT):
-                    if (
-                        self.lastStep == Direction.UP and
-                        self.mapObj.map[29 - self.mapObj.look(Direction.UP)][45].ignore and
-                        self.mapObj.look(Direction.RIGHT) > 0
-                    ):
+                if self.cellDir(self.lastStep).ignore:
+                    if self.lastStep == Direction.RIGHT:
+                        if self.mapObj.look(Direction.UP) > 0 and not self.cellDir(Direction.UP).ignore:
+                            self.lastStep = Direction.UP
+                        elif self.mapObj.look(Direction.LEFT) > 0 and not self.cellDir(Direction.LEFT).ignore:
+                            self.lastStep = Direction.LEFT
+                        elif self.mapObj.look(Direction.DOWN) > 0 and not self.cellDir(Direction.DOWN).ignore:
+                            self.lastStep = Direction.DOWN
+                        else:
+                            '''self.state = "survive"
+                            return self.survive()'''
+                    elif self.lastStep == Direction.UP:
+                        if self.mapObj.look(Direction.LEFT) > 0 and not self.cellDir(Direction.LEFT).ignore:
+                            self.lastStep = Direction.LEFT
+                        elif self.mapObj.look(Direction.DOWN) > 0 and not self.cellDir(Direction.DOWN).ignore:
+                            self.lastStep = Direction.DOWN
+                        elif self.mapObj.look(Direction.RIGHT) > 0 and not self.cellDir(Direction.RIGHT).ignore:
                             self.lastStep = Direction.RIGHT
-                    elif (
-                        self.lastStep == Direction.RIGHT and
-                        self.mapObj.map[30][46 + self.mapObj.look(Direction.RIGHT)].ignore and
-                        self.mapObj.look(Direction.DOWN) > 0
-                    ):
-                        self.lastStep = Direction.DOWN
-                    elif (
-                        self.lastStep == Direction.LEFT and
-                        self.mapObj.map[30][44 - self.mapObj.look(Direction.LEFT)].ignore and
-                        self.mapObj.look(Direction.UP) > 0
-                    ):
-                        self.lastStep = Direction.UP
-                    elif (
-                        self.lastStep == Direction.DOWN and
-                        self.mapObj.map[31 + self.mapObj.look(Direction.DOWN)].ignore and
-                        self.mapObj.look(Direction.LEFT) > 0
-                    ):
-                        self.lastStep = Direction.LEFT
+                        else:
+                            '''self.state = "survive"
+                            return self.survive()'''
+                    elif self.lastStep == Direction.LEFT:
+                        if self.mapObj.look(Direction.DOWN) > 0 and not self.cellDir(Direction.DOWN).ignore:
+                            self.lastStep = Direction.DOWN
+                        elif self.mapObj.look(Direction.RIGHT) > 0 and not self.cellDir(Direction.RIGHT).ignore:
+                            self.lastStep = Direction.RIGHT
+                        elif self.mapObj.look(Direction.UP) > 0 and not self.cellDir(Direction.UP).ignore:
+                            self.lastStep = Direction.UP
+                        else:
+                            '''
+                            self.state = "survive"
+                            return self.survive()'''
+                    else:
+                        # Moved this code
+                        '''else:
+                            self.state = "survive"
+                            return self.survive()'''
+                        if self.mapObj.look(Direction.RIGHT) > 0 and not self.cellDir(Direction.RIGHT).ignore:
+                            self.lastStep = Direction.RIGHT
+                        elif self.mapObj.look(Direction.UP) > 0 and not self.cellDir(Direction.UP).ignore:
+                            self.lastStep = Direction.UP
+                        elif self.mapObj.look(Direction.LEFT) > 0 and not self.cellDir(Direction.LEFT).ignore:
+                            self.lastStep = Direction.LEFT
+                        else:
+                            return self.getRelativeDirection(Direction.DOWN)
+
 
             return self.lastStep
 
         elif self.huntStage == "exit":
 
+            if self.huntCounter == 1:
+
+                tPosX = 45 + self.targetCell.rPosX
+                tPosY = 45 - self.targetCell.rPosY
+
             if self.dangerData[0] < 3:
                 self.state = "search"
                 return self.search()
 
-            if self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) < 2:
-                if self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) < 2:
-                    if self.mapObj.look(self.getRelativeDirection(Direction.UP)) < 2:
+            if self.dangerData[0] < 3 and not (self.getRelativeDirection(Direction.DOWN) in self.dangerData[1]) or\
+                    self.dangerData[0] < 4 and self.getRelativeDirection(Direction.DOWN) in self.dangerData[1]:
+                if self.getRelativeDirection(Direction.UP) in self.dangerData[1]:
+                    if self.getRelativeDirection(Direction.LEFT) in self.dangerData[1]:
+                        if self.getRelativeDirection(Direction.RIGHT) in self.dangerData[1]:
+                            self.state = "survive"
+                            return self.survive()
+                        return self.getRelativeDirection(Direction.RIGHT)
+                    return self.getRelativeDirection(Direction.LEFT)
+                return self.getRelativeDirection(Direction.UP)
+
+
+            if self.mapObj.look(self.getRelativeDirection(Direction.RIGHT)) < 3:
+                if self.mapObj.look(self.getRelativeDirection(Direction.LEFT)) < 3:
+                    if self.mapObj.look(self.getRelativeDirection(Direction.UP)) < 3:
                             self.state = "survive"
                             return self.survive()
 
                     return self.getRelativeDirection(Direction.UP)
-
                 return self.getRelativeDirection(Direction.LEFT)
-
             return self.getRelativeDirection(Direction.RIGHT)
 
 
@@ -972,7 +1089,7 @@ class CustomSnek(Snek):
         if self.lastStep == Direction.UP:
             self.huntStartPos[0] += 1
             if self.huntStartPos[0] == 60:
-                self.huntStartPos[0] = 0
+                self.huntStartPos[0] = 59
 
         elif self.lastStep == Direction.LEFT:
             self.huntStartPos[1] += 1
@@ -988,6 +1105,7 @@ class CustomSnek(Snek):
             self.huntStartPos[0] -= 1
             if self.huntStartPos[0] == -1:
                 self.huntStartPos[0] = 59
+
 
     def getTargetCellDirection(self) -> Direction:
         for i in range(60):
@@ -1015,30 +1133,15 @@ class CustomSnek(Snek):
 
     # TODO: Survive mode: <=============================================================================================
     def survive(self):
-        #print("Called 'survive' mode")
+        print("Called 'survive' mode")
 
         disL = self.mapObj.look(self.getRelativeDirection(Direction.LEFT))
         disF = self.mapObj.look(self.getRelativeDirection(Direction.UP))
         disR = self.mapObj.look(self.getRelativeDirection(Direction.RIGHT))
-
-        if (
-                disL > 0 and
-                disF > 0 and
-                disR > 0
-        ):
-            if not self.leftSafe():
-                return self.getRelativeDirection(Direction.RIGHT)
-            elif not self.forwardSafe():
-                return self.getRelativeDirection(Direction.UP)
-            elif not self.rightSafe():
-                return self.getRelativeDirection(Direction.LEFT)
-            else:
-                self.state = "search"
-                return self.search()
-
+        print(disL, ";", disF, ";", disR)
 
         # If snek was circling left
-        elif not self.cageDir:
+        if not self.cageDir:
 
             if (
                 disR > 0 and
@@ -1710,6 +1813,20 @@ class CustomSnek(Snek):
     def backwardSafe(self):
         return False
         # look... don't judge me I thought this was hilarious.
+
+
+    # TODO: Return first cell in direction
+    def cellDir(self, direction: Direction) -> Map.myCell:
+        if direction is Direction.UP:
+            return self.mapObj.map[29 - self.mapObj.look(Direction.UP)][45]
+        elif direction is Direction.DOWN:
+            return self.mapObj.map[31 + self.mapObj.look(Direction.DOWN)][45]
+        elif direction is Direction.LEFT:
+            return self.mapObj.map[30][44 - self.mapObj.look(Direction.LEFT)]
+        elif direction is Direction.RIGHT:
+            return self.mapObj.map[30][46 + self.mapObj.look(Direction.RIGHT)]
+        else:
+            raise ValueError("Invalid Direction")
 
 
 # TODO: Bottom c:
